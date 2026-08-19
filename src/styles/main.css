@@ -1,0 +1,623 @@
+﻿
+/* 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+ * design-systems/apple/tokens.css
+ *
+ * Structured token bindings for the Apple-inspired design system 鈥? * a precision editorial language built around white-space discipline,
+ * SF Pro typography, and a single restrained blue accent. This file
+ * is the *machine-readable* form of the values described in
+ * `DESIGN.md`. Agents are expected to paste the `:root { 鈥?}` block
+ * verbatim into the first `<style>` of every artifact they generate
+ * against this design system, then reference everything via
+ * var(--name) from then on.
+ *
+ * Why this file exists:
+ *   DESIGN.md tells humans that Apple uses "Pale Apple Gray (#f5f5f7)
+ *   as the main light surface" and "Apple Action Blue (#0071e3) as the
+ *   primary accent", but agents have to translate those prose names
+ *   into the standard token names the lint enforces (`--surface`,
+ *   `--accent`). This file pre-translates the brand once, so agents
+ *   copy structure instead of inventing it.
+ *
+ * Brand-specific schema decisions (non-obvious bindings worth flagging
+ * for reviewers and downstream brand authors):
+ *   1. We bind --surface-warm to a real intermediate tier (#fbfbfd),
+ *      NOT an alias of --surface. Apple's surface ladder genuinely has
+ *      three light stops 鈥?pure white retail canvas, near-white
+ *      brightness-shifted bands, and pale Apple gray feature fields 鈥? *      so collapsing surface-warm would erase a real brand feature.
+ *   2. We bind --fg-2, --meta, and --border-soft to independent values
+ *      rather than aliases. Apple's neutral text ramp is famously
+ *      four-stop (Near-Black Ink 鈫?Utility Dark Gray 鈫?Secondary
+ *      Neutral Gray 鈫?Mid Border Gray) and the schema's B-slots map
+ *      onto it cleanly.
+ *   3. --radius-pill is bound to 980px, not 9999px. Apple's signature
+ *      capsule CTA literally uses 980px in published CSS, and the
+ *      number is itself a brand-recognisable detail; we keep it.
+ *   4. --accent-hover lifts (#0077ed) instead of darkening. Apple's
+ *      live blue buttons brighten slightly on hover rather than mix
+ *      toward black; the schema's default formula would fight that.
+ *      --accent-active darkens to #0066cc 鈥?the documented Body Link
+ *      Blue 鈥?so the active state aligns with Apple's read-link tone.
+ *   5. --tracking-display is -0.015em. The DESIGN.md hierarchy lists
+ *      -1.2px on 80px hero (-0.015em); tighter than that breaks at
+ *      smaller display sizes, looser loses Apple's machined feel.
+ *   6. --section-y-desktop is 100px. Apple's billboard chapters lean
+ *      noticeably more generous than the schema default of 80px 鈥?the
+ *      breathing room is what lets product imagery do the talking.
+ *   7. --ease-standard is cubic-bezier(0.28, 0, 0.22, 1), an Apple-
+ *      flavoured smooth-out instead of the schema default. Apple
+ *      transitions decelerate hard then settle, never bounce.
+ *
+ * Contract sources:
+ *   - Standard token names: design-systems/_schema/tokens.schema.ts
+ *       (TOKEN_SCHEMA 鈥?every name below appears there or as an
+ *        explicit B-slot alias.)
+ *   - A2 fallback values: design-systems/_schema/defaults.css
+ *       (We override --motion-base, --ease-standard, --elev-raised,
+ *        --focus-ring, --radius-pill; the rest match defaults.)
+ *   - Lint enforcement: apps/daemon/src/lint-artifact.ts
+ *       (raw-hex >12 outside :root 鈫?P1; non-token accent 鈫?P0)
+ *
+ * Keep this file additive: never invent token names not also documented
+ * in DESIGN.md or the shared schema. New Apple-derived sub-brands
+ * cloning this template should overwrite values, not rename keys.
+ * 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€ */
+
+:root {
+  /* 鈹€鈹€鈹€ Surface (3 levels) 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+   * Apple's binary section rhythm alternates pure white retail/hero
+   * canvases with pale Apple gray feature fields. We bind --bg to
+   * the white canvas (the most common default Apple page background)
+   * and --surface to the pale gray that cards and feature bands lift
+   * onto. --surface-warm is bound to a real third tier (#fbfbfd) 鈥?   * the near-white brightness shift that appears between hero and
+   * pale-gray bands on apple.com. Collapsing it to var(--surface)
+   * would erase a real brand feature, so we keep it independent. */
+  --bg: #ffffff;
+  --surface: #f5f5f7;
+  --surface-warm: #fbfbfd;
+
+  /* 鈹€鈹€鈹€ Foreground ramp (4 levels) 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+   * Apple's text neutrals are explicitly named in DESIGN.md 搂2:
+   * Near-Black Ink (primary), Utility Dark Gray (secondary text /
+   * dark-neutral surfaces in store contexts), Secondary Neutral Gray
+   * (helper copy / tertiary metadata), Mid Border Gray (the strongest
+   * neutral, used for stronger field outlines and the most-restrained
+   * caption tier). We bind all four 鈥?Apple genuinely walks the full
+   * ramp, so collapsing --fg-2 or --meta to siblings would flatten
+   * the brand.
+   *
+   * Note that none of these are pure black (#000000). #000000 is
+   * reserved for hero canvases and dark chapters; for body type on
+   * white, #1d1d1f gives the slight warmth that reads as Apple. */
+  --fg: #1d1d1f;
+  --fg-2: #424245;
+  --muted: #6e6e73;
+  --meta: #86868b;
+
+  /* 鈹€鈹€鈹€ Border (2 levels) 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+   * Soft Border Gray (#d2d2d7) is Apple's default divider weight and
+   * card-edge color. --border-soft is bound to a lighter near-neutral
+   * (#e8e8ed) for inner row separators in dense retail tables and
+   * configurator option lists, where the d2d2d7 hairline would
+   * over-compete with the option labels. */
+  --border: #d2d2d7;
+  --border-soft: #e8e8ed;
+
+  /* 鈹€鈹€鈹€ Accent 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+   * Apple Action Blue 鈥?the system's only persistent chromatic move.
+   * DESIGN.md 搂7 ("Don't introduce broad secondary accent palettes
+   * that compete with Apple blue") makes this a one-color brand for
+   * action and link semantics; the schema's hard cap of 鈮? visible
+   * accent uses per screen aligns naturally. */
+  --accent: #0071e3;
+  --accent-on: #ffffff; /* white label on the blue fill */
+
+  /* 鈹€鈹€鈹€ Accent states 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+   * Apple's live primary buttons LIGHTEN on hover (the blue gains
+   * luminance) and darken on press. The schema's default black-mix
+   * formula would fight that motion, so we hand-pick both values:
+   *   - hover: #0077ed (鈮?4% brighter than --accent)
+   *   - active: #0066cc (the documented Body Link Blue from DESIGN.md
+   *             搂2, which doubles cleanly as the press tone)
+   *
+   * Schema rule: every brand provides --accent-hover and
+   * --accent-active. The binding strategy (formula / hand-picked /
+   * identity) is brand-decided. Default uses formulas; kami uses
+   * identity + hand-picked; Apple uses hand-picked in both
+   * directions. */
+  --accent-hover: #0077ed;
+  --accent-active: #0066cc;
+
+  /* 鈹€鈹€鈹€ Semantic 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+   * Apple's DESIGN.md 搂2 explicitly notes "no distinct semantic
+   * palette was consistently visible in the extracted surface set" 鈥?   * so we inherit the schema defaults verbatim. Apple artifacts
+   * almost never need success / warn / danger; when they do, the
+   * defaults are restrained enough not to fight the blue accent.
+   * Reserve under 5% of any surface area regardless. */
+  --success: #16a34a;
+  --warn:    #eab308;
+  --danger:  #dc2626;
+
+  /* 鈹€鈹€鈹€ Typography 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+   * Apple's documented split is two SF Pro families: SF Pro Display
+   * for hero / merchandising headings, SF Pro Text for navigation,
+   * controls, and dense commerce copy. We mirror the exact published
+   * fallback chain (SF Pro Icons 鈫?Helvetica Neue 鈫?Helvetica 鈫?Arial
+   * 鈫?sans-serif) so artifacts rendered on non-macOS clients land on
+   * the closest practical substitute.
+   *
+   * SF Mono leads the monospace stack 鈥?Apple's brand mono 鈥?with
+   * the schema fallbacks behind it for portability. */
+  --font-display:
+    "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-body:
+    "SF Pro Text", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-mono:
+    "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Monaco, Consolas, monospace;
+
+  /* Type scale (px) 鈥?derived from DESIGN.md 搂3 hierarchy table.
+   * Apple's body baseline is 17px (NOT the 16px web norm) because
+   * SF Pro Text was metrically tuned at 17 for Retina; rebinding
+   * --text-base to anything else collapses the brand's reading
+   * texture. The display ceiling is the 80px Hero Display XL. */
+  --text-xs:   12px;   /* Micro UI 鈥?fine print, micro labels */
+  --text-sm:   14px;   /* Control Label 鈥?buttons, helper labels */
+  --text-base: 17px;   /* Body Primary 鈥?Apple's reading baseline */
+  --text-lg:   21px;   /* Link/Action Heading 鈥?large promo links */
+  --text-xl:   28px;   /* Card/Product Title 鈥?tile-level naming */
+  --text-2xl:  40px;   /* Product Heading 鈥?campaign section titles */
+  --text-3xl:  56px;   /* Hero Display L 鈥?homepage hero moments */
+  --text-4xl:  80px;   /* Hero Display XL 鈥?Environment / store hero */
+
+  /* Apple's leading envelope is unusually tight at the top of the
+   * scale (display sizes ride at 1.00鈥?.10) and unusually airy in
+   * the body (1.47, well above the web 1.4 default). Both numbers
+   * come straight from DESIGN.md 搂3. */
+  --leading-body:  1.47;   /* SF Pro Text body, 17px */
+  --leading-tight: 1.05;   /* Hero Display XL ceiling */
+
+  /* Display tracking compresses to -0.015em 鈥?the famous Apple
+   * machined-headline feel. DESIGN.md 搂3 lists -1.2px on 80px
+   * (鈮?-0.015em); we bind a single em-value so the same rule applies
+   * across the display tiers. Body type runs at 0 / -0.374px and is
+   * left to component-level rules so as not to hurt readability. */
+  --tracking-display: -0.015em;
+
+  /* 鈹€鈹€鈹€ Spacing 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+   * Apple's underlying grid is 8px (DESIGN.md 搂5), with utility
+   * micro-steps (2/4/6/7/8/9/10) for precision alignment. The shared
+   * schema's 4-8-12-16-20-24-32-48 scale fits cleanly 鈥?we inherit
+   * the defaults. Component-internal values that don't match a token
+   * (Apple's 14px or 17px utility intervals) stay inline at the
+   * call site rather than spawning extra spacing tokens. */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-12: 48px;
+
+  /* 鈹€鈹€鈹€ Section rhythm 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+   * Apple's billboard chapters lean noticeably more generous than the
+   * schema default of 80px 鈥?broad top/bottom breathing room is what
+   * lets product imagery dominate the page. We bind 100/64/40, a
+   * slightly wider envelope than default's 80/48/32. */
+  --section-y-desktop: 100px;
+  --section-y-tablet:  64px;
+  --section-y-phone:   40px;
+
+  /* 鈹€鈹€鈹€ Radius 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+   * Apple uses purposeful radius tiers (DESIGN.md 搂5 搂7 鈥?"don't
+   * flatten all corners to a single radius"). The mapping:
+   *   --radius-sm   鈫?8px   compact controls and fields
+   *   --radius-md   鈫?12px  standard buttons, configurator chips
+   *   --radius-lg   鈫?18px  cards, module frames, commerce panels
+   *   --radius-pill 鈫?980px Apple's signature capsule CTA 鈥?we keep
+   *                          the literal value rather than collapse
+   *                          to 9999px because the number itself is
+   *                          a brand-recognisable detail in Apple's
+   *                          published CSS.
+   *
+   * The 28-36px spotlight tier and the 56px capsule sub-tier are
+   * component-internal one-offs and stay inline 鈥?they do not earn
+   * their own tokens until a second use appears. */
+  --radius-sm:   8px;
+  --radius-md:   12px;
+  --radius-lg:   18px;
+  --radius-pill: 980px;
+
+  /* 鈹€鈹€鈹€ Elevation (3 levels) 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+   * Apple uses depth sparingly (DESIGN.md 搂6 鈥?"depth is intentionally
+   * restrained"). Three sanctioned levels:
+   *   - flat   鈫?none (the default; tonal contrast does the work)
+   *   - ring   鈫?0 0 0 1px var(--border) (border-led containment in
+   *              dense retail contexts)
+   *   - raised 鈫?0 12px 32px rgba(0,0,0,0.08) (the soft Apple card
+   *              shadow; rgba 0.08 is the lower bound from DESIGN.md
+   *              搂6's "0.08 鈫?0.22" range, which keeps cards from
+   *              feeling Material-flavoured)
+   *
+   * No fourth level 鈥?that would be the Material/neumorphism stack
+   * Apple consciously avoids. */
+  --elev-flat:   none;
+  --elev-ring:   0 0 0 1px var(--border);
+  --elev-raised: 0 12px 32px rgba(0, 0, 0, 0.08);
+
+  /* 鈹€鈹€鈹€ Focus ring 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+   * Apple's keyboard-focus signal is a soft blue glow at the action
+   * accent (DESIGN.md 搂6 鈥?"Blue focus signal (#0071e3) for keyboard
+   * and selection emphasis"). We use a 4px ring at ~35% accent
+   * opacity, slightly larger than the schema's 3px default so it
+   * reads as the deliberate Apple halo rather than a generic outline.
+   * Implemented as a box-shadow so it layers outside the element
+   * without affecting layout. */
+  --focus-ring: 0 0 0 4px color-mix(in oklab, var(--accent), transparent 65%);
+
+  /* 鈹€鈹€鈹€ Motion 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+   * Apple transitions decelerate hard and settle 鈥?never bounce,
+   * never spring past the target. We override the schema default
+   * easing with cubic-bezier(0.28, 0, 0.22, 1), the curve Apple
+   * uses on apple.com for hover and section reveals; --motion-base
+   * is bumped from 200ms 鈫?220ms because Apple's micro-interactions
+   * carry slightly more cinematic weight than the web default.
+   * --motion-fast stays at 150ms for true micro-states (hover tints,
+   * focus, kbd press feedback). */
+  --motion-fast:   150ms;
+  --motion-base:   220ms;
+  --ease-standard: cubic-bezier(0.28, 0, 0.22, 1);
+
+  /* 鈹€鈹€鈹€ Layout 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+   * Apple's marketing core is a constrained readable column with
+   * generous outer margins (DESIGN.md 搂5). 1024px max keeps lines
+   * inside the SF Pro Text comfortable-measure ceiling (~80ch at
+   * 17px) while leaving the chapter band full-bleed. Gutters step
+   * 22 鈫?18 鈫?16 across desktop / tablet / phone 鈥?slightly tighter
+   * than default to honor Apple's "broad horizontal breathing room
+   * but column-disciplined content" balance. */
+  --container-max:            1024px;
+  --container-gutter-desktop: 22px;
+  --container-gutter-tablet:  18px;
+  --container-gutter-phone:   16px;
+}
+
+/* 鈹€鈹€鈹€ 娣辫壊涓婚瑕嗗啓锛坥klch 鎺ㄥ锛岄潪鍙嶈壊锛?鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€ */
+html[data-theme="dark"]{
+  --bg: oklch(.175 .004 280);
+  --surface: oklch(.140 .004 280);
+  --surface-warm: oklch(.155 .004 280);
+  --fg: oklch(.955 .002 285);
+  --fg-2: oklch(.84 .004 285);
+  --muted: oklch(.72 .005 285);
+  --meta: oklch(.60 .006 285);
+  --border: oklch(.30 .005 280);
+  --border-soft: oklch(.245 .004 280);
+  --accent: oklch(.68 .185 256);
+  --accent-hover: oklch(.735 .19 256);
+  --accent-active: oklch(.63 .17 256);
+  --elev-raised: 0 12px 32px rgba(0,0,0,.45);
+  --focus-ring: 0 0 0 4px color-mix(in oklab, var(--accent), transparent 72%);
+  color-scheme: dark;
+}
+html[data-theme="light"]{color-scheme: light;}
+
+/* 鈹€鈹€鈹€ 鍩虹 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€ */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:"SF Pro Text",-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;font-size:15px;color:var(--fg);background:var(--surface);-webkit-font-smoothing:antialiased;overflow:hidden}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;padding:0}
+input,textarea{font:inherit;color:inherit;border:none;outline:none;background:none}
+*{transition:background-color .22s var(--ease-standard),border-color .22s var(--ease-standard),color .22s var(--ease-standard)}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:color-mix(in oklab,var(--fg) 16%,transparent);border-radius:99px;border:3px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:color-mix(in oklab,var(--fg) 28%,transparent);background-clip:content-box;border:3px solid transparent}
+::-webkit-scrollbar-track{background:transparent}
+::selection{background:color-mix(in oklab,var(--accent) 26%,transparent)}
+:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+.hidden{display:none!important}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes popIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+@keyframes spinOnce{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+.spin{animation:spinOnce .45s var(--ease-standard)}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important}}
+
+/* 鈹€鈹€鈹€ 鍥炬爣鎸夐挳 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€ */
+.icon-btn{display:grid;place-items:center;width:30px;height:30px;border-radius:var(--radius-sm);color:var(--fg-2);transition:background-color var(--motion-fast) var(--ease-standard),color var(--motion-fast),transform var(--motion-fast)}
+.icon-btn:hover{background:color-mix(in oklab,var(--fg) 7%,transparent);color:var(--fg)}
+.icon-btn:active{transform:scale(.92)}
+.icon-btn svg{width:16px;height:16px}
+.icon-btn.accent{color:var(--accent)}
+.icon-btn.accent:hover{background:color-mix(in oklab,var(--accent) 12%,transparent);color:var(--accent)}
+.btn-primary{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 22px;border-radius:var(--radius-pill);background:var(--accent);color:var(--accent-on);font-size:14px;transition:background-color var(--motion-base) var(--ease-standard),transform var(--motion-fast),box-shadow var(--motion-base)}
+.btn-primary:hover{background:var(--accent-hover);box-shadow:0 4px 16px color-mix(in oklab,var(--accent) 35%,transparent)}
+.btn-primary:active{background:var(--accent-active);transform:scale(.97)}
+.btn-primary svg{width:15px;height:15px}
+
+/* 鈹€鈹€鈹€ 鏍囬鏍?鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€ */
+#app{display:flex;flex-direction:column;height:100%;min-width:940px}
+.titlebar{flex:none;height:52px;display:flex;align-items:center;gap:14px;padding:0 14px;background:color-mix(in oklab,var(--bg) 66%,transparent);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid var(--border-soft);position:relative;z-index:50}
+.traffic{display:flex;gap:8px;flex:none}
+.tl{width:12px;height:12px;border-radius:50%;position:relative;box-shadow:inset 0 0 0 .5px rgba(0,0,0,.1)}
+.tl.red{background:oklch(.72 .19 18)}
+.tl.yellow{background:oklch(.82 .17 85)}
+.tl.green{background:oklch(.72 .23 145)}
+.tl::after{content:'';position:absolute;inset:0;display:grid;place-items:center;font-size:9px;line-height:1;font-weight:700;color:rgba(0,0,0,.55);opacity:0;transition:opacity var(--motion-fast)}
+.tl:hover::after{opacity:1}
+.tl.red::after{content:'脳'}
+.tl.yellow::after{content:'鈭?}
+.tl.green::after{content:'+'}
+.tl:active{transform:scale(.88)}
+.brand{display:flex;align-items:center;gap:8px;flex:none;min-width:0}
+.brand-icon{width:22px;height:22px;border-radius:6px;background:linear-gradient(135deg,oklch(.68 .185 256),oklch(.60 .21 295));display:grid;place-items:center;color:oklch(1 0 0);box-shadow:0 2px 6px color-mix(in oklab,var(--accent) 35%,transparent);flex:none}
+.brand-icon svg{width:12px;height:12px}
+.brand-name{font:600 14px/1 var(--font-display);letter-spacing:-.01em;white-space:nowrap}
+.search-wrap{flex:1;max-width:460px;margin:0 auto;position:relative}
+.search-box{display:flex;align-items:center;gap:7px;height:30px;padding:0 10px;border-radius:9px;background:color-mix(in oklab,var(--fg) 6%,transparent);border:1px solid transparent}
+.search-box:focus-within{background:var(--bg);border-color:color-mix(in oklab,var(--accent) 50%,transparent);box-shadow:0 0 0 3px color-mix(in oklab,var(--accent) 16%,transparent)}
+.search-box svg{width:14px;height:14px;color:var(--meta);flex:none}
+.search-box input{flex:1;min-width:0;font-size:13px;height:100%}
+.search-box input::placeholder{color:var(--meta)}
+.search-box input:focus-visible{box-shadow:none}
+.search-clear{width:18px;height:18px;border-radius:5px;display:none;place-items:center;color:var(--meta);flex:none;transition:background-color var(--motion-fast),color var(--motion-fast)}
+.search-clear:hover{background:color-mix(in oklab,var(--fg) 10%,transparent);color:var(--fg)}
+.search-clear svg{width:11px;height:11px}
+.search-wrap.has-q .search-clear{display:grid}
+.tb-actions{display:flex;align-items:center;gap:6px;flex:none}
+.settings-wrap{position:relative}
+.popover{position:absolute;top:42px;right:0;width:252px;background:var(--bg);border:1px solid var(--border-soft);border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.18);padding:8px;display:none;z-index:120}
+html[data-theme="dark"] .popover{box-shadow:0 18px 50px rgba(0,0,0,.6)}
+.popover.open{display:block;animation:popIn .18s var(--ease-standard)}
+.po-title{font-size:11.5px;font-weight:600;color:var(--meta);letter-spacing:.02em;padding:6px 10px 4px}
+.po-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border-radius:9px;font-size:13.5px;color:var(--fg-2)}
+.po-row:hover{background:color-mix(in oklab,var(--fg) 5%,transparent);color:var(--fg)}
+.po-meta{font-size:12px;color:var(--meta)}
+.po-note{font-size:12px;line-height:1.55;color:var(--meta);padding:8px 10px;border-top:1px solid var(--border-soft);margin-top:4px}
+.seg-mini{display:flex;background:color-mix(in oklab,var(--fg) 8%,transparent);border-radius:8px;padding:2px;gap:2px;flex:none}
+.seg-mini-btn{height:24px;padding:0 12px;border-radius:6px;font-size:12.5px;color:var(--fg-2);transition:background-color var(--motion-fast),color var(--motion-fast),box-shadow var(--motion-fast)}
+.seg-mini-btn:hover{color:var(--fg)}
+.seg-mini-btn.on{background:var(--bg);color:var(--fg);font-weight:500;box-shadow:0 1px 3px rgba(0,0,0,.14)}
+html[data-theme="dark"] .seg-mini-btn.on{box-shadow:0 1px 4px rgba(0,0,0,.5)}
+
+/* 鈹€鈹€鈹€ 涓夋爮甯冨眬 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€ */
+#main{flex:1;display:flex;min-height:0}
+#sidebar{flex:0 0 220px;display:flex;flex-direction:column;background:var(--bg);border-right:1px solid var(--border-soft);min-width:0;overflow:hidden;transition:flex-basis .28s var(--ease-standard);position:relative;z-index:10}
+#sidebar.rail{flex-basis:56px}
+.side-nav{flex:1;overflow-y:auto;overflow-x:hidden;padding:12px 10px;display:flex;flex-direction:column;gap:2px}
+.side-item{display:flex;align-items:center;gap:9px;width:100%;height:32px;padding:0 10px;border-radius:var(--radius-sm);font-size:13.5px;color:var(--fg-2);white-space:nowrap;transition:background-color var(--motion-fast) var(--ease-standard),color var(--motion-fast)}
+.side-item svg{width:15px;height:15px;flex:none}
+.side-item:hover{background:color-mix(in oklab,var(--fg) 6%,transparent);color:var(--fg)}
+.side-item.on{background:color-mix(in oklab,var(--accent) 12%,transparent);color:var(--accent)}
+.side-item .si-label{flex:1;text-align:left;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.folder-row .si-label,.tag-pill .si-label{flex:1;text-align:left;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.side-item .cnt{margin-left:auto;font-size:11.5px;color:var(--meta);font-variant-numeric:tabular-nums;flex:none}
+.side-item.on .cnt{color:var(--accent)}
+.side-sec-head{padding:14px 10px 6px;font-size:11.5px;font-weight:600;color:var(--meta);letter-spacing:.04em}
+.folder-row{display:flex;align-items:center;gap:7px;width:100%;height:30px;padding:0 10px;border-radius:var(--radius-sm);font-size:13.5px;color:var(--fg-2);white-space:nowrap}
+.folder-row:hover{background:color-mix(in oklab,var(--fg) 6%,transparent);color:var(--fg)}
+.folder-row .caret{width:13px;height:13px;color:var(--meta);flex:none;transition:transform .18s var(--ease-standard);display:grid;place-items:center}
+.folder-row .caret svg{width:10px;height:10px}
+.folder-row.open .caret{transform:rotate(90deg)}
+.folder-row > svg{width:14px;height:14px;flex:none}
+.folder-row .cnt{margin-left:auto;font-size:11.5px;color:var(--meta);font-variant-numeric:tabular-nums;flex:none}
+.folder-children{display:none}
+.folder-children.open{display:block}
+.folder-child{padding-left:34px;text-align:left}
+.folder-child.on{background:color-mix(in oklab,var(--accent) 12%,transparent);color:var(--accent)}
+.folder-child.on .cnt{color:var(--accent)}
+.tag-pill{display:flex;align-items:center;gap:7px;width:100%;height:30px;padding:0 10px;border-radius:999px;font-size:13px;color:var(--fg-2);white-space:nowrap;transition:background-color var(--motion-fast),color var(--motion-fast)}
+.tag-pill:hover{background:color-mix(in oklab,var(--fg) 6%,transparent);color:var(--fg)}
+.tag-pill.on{background:color-mix(in oklab,var(--accent) 12%,transparent);color:var(--accent)}
+.tag-pill .tag-dot{width:7px;height:7px;border-radius:50%;flex:none}
+.tag-pill .cnt{margin-left:auto;font-size:11.5px;color:var(--meta);font-variant-numeric:tabular-nums;flex:none}
+.rail-item{display:none;align-items:center;justify-content:center;width:100%;height:32px;border-radius:var(--radius-sm);color:var(--fg-2);margin-top:6px}
+.rail-item:hover{background:color-mix(in oklab,var(--fg) 7%,transparent);color:var(--fg)}
+.rail-item svg{width:16px;height:16px}
+.side-foot{border-top:1px solid var(--border-soft);padding:10px;display:grid;gap:2px}
+.side-toggle{display:flex;align-items:center;gap:9px;width:100%;height:30px;padding:0 10px;border-radius:var(--radius-sm);font-size:13.5px;color:var(--fg-2);white-space:nowrap;transition:background-color var(--motion-fast),color var(--motion-fast)}
+.side-toggle:hover{background:color-mix(in oklab,var(--fg) 6%,transparent);color:var(--fg)}
+.side-toggle svg{width:15px;height:15px;flex:none}
+.side-toggle .tl-label{flex:1;text-align:left}
+#sidebar.rail .side-nav{gap:4px}
+#sidebar.rail .side-item{justify-content:center;padding:0}
+#sidebar.rail .side-item .si-label,#sidebar.rail .side-item .cnt,#sidebar.rail .side-sec-head,#sidebar.rail .folder-row,#sidebar.rail .folder-children,#sidebar.rail .tag-pill{display:none}
+#sidebar.rail .rail-item{display:flex}
+#sidebar.rail .side-toggle{justify-content:center;padding:0}
+#sidebar.rail .side-toggle .tl-label{display:none}
+
+/* 鈹€鈹€鈹€ 绗旇鍒楄〃 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€ */
+#noteList{flex:0 0 300px;display:flex;flex-direction:column;background:var(--surface);border-right:1px solid var(--border-soft);min-width:0}
+.list-head{display:flex;align-items:center;gap:8px;padding:16px 16px 10px;flex:none}
+.list-head h2{font:600 15px/1.2 var(--font-display);letter-spacing:-.01em;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.list-head .cnt{font-size:12px;color:var(--meta);background:color-mix(in oklab,var(--fg) 8%,transparent);padding:2px 9px;border-radius:999px;flex:none;font-variant-numeric:tabular-nums}
+.cards{flex:1;overflow-y:auto;padding:2px 12px 16px;display:flex;flex-direction:column;gap:7px}
+.card{position:relative;padding:12px 13px 10px;border-radius:var(--radius-md);background:color-mix(in oklab,var(--bg) 78%,transparent);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--border-soft);cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.03);transition:border-color var(--motion-fast) var(--ease-standard),box-shadow var(--motion-fast) var(--ease-standard),transform var(--motion-fast) var(--ease-standard),background-color var(--motion-fast)}
+.card:hover{border-color:var(--border);box-shadow:var(--elev-raised);transform:translateY(-1px)}
+.card.on{border-color:color-mix(in oklab,var(--accent) 42%,var(--border));background:color-mix(in oklab,var(--accent) 8%,var(--bg));box-shadow:0 2px 12px color-mix(in oklab,var(--accent) 14%,transparent)}
+.card-title{font-size:14.5px;font-weight:600;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:30px}
+.card-sum{font-size:12.5px;line-height:1.5;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card-meta{display:flex;align-items:center;margin-top:9px;font-size:11.5px;color:var(--meta)}
+.card-flags{display:flex;gap:4px;margin-left:auto;align-items:center;flex:none}
+.card-actions{display:none;gap:2px;margin-left:auto;align-items:center;flex:none}
+.card:hover .card-actions{display:flex}
+.card:hover .card-flags{display:none}
+.mini-btn{width:24px;height:24px;border-radius:6px;display:grid;place-items:center;color:var(--meta);transition:background-color var(--motion-fast),color var(--motion-fast),transform var(--motion-fast)}
+.mini-btn:hover{background:color-mix(in oklab,var(--fg) 8%,transparent);color:var(--fg)}
+.mini-btn:active{transform:scale(.88)}
+.mini-btn svg{width:13px;height:13px}
+.mini-btn.on-star{color:oklch(.79 .17 85)}
+.mini-btn.on-pin{color:var(--accent)}
+mark{background:oklch(.88 .16 100);color:oklch(.27 .06 60);border-radius:3px;padding:0 2px}
+html[data-theme="dark"] mark{background:oklch(.52 .12 98);color:oklch(.97 .02 95)}
+.list-empty{flex:1;display:grid;place-content:center;justify-items:center;gap:10px;padding:24px;text-align:center;color:var(--muted);font-size:13px;animation:fadeUp .3s var(--ease-standard)}
+.list-empty .le-illus{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;background:color-mix(in oklab,var(--fg) 6%,transparent);color:var(--meta)}
+.list-empty .le-illus svg{width:22px;height:22px}
+.list-empty .le-title{font-size:13.5px;font-weight:500;color:var(--fg-2)}
+.le-link{color:var(--accent);font-size:13px;padding:6px 12px;border-radius:8px}
+.le-link:hover{background:color-mix(in oklab,var(--accent) 10%,transparent)}
+.trash-row{display:flex;align-items:center;gap:10px;padding:11px 13px;border-radius:var(--radius-md);background:color-mix(in oklab,var(--bg) 78%,transparent);border:1px solid var(--border-soft);transition:border-color var(--motion-fast),box-shadow var(--motion-fast)}
+.trash-row:hover{border-color:var(--border);box-shadow:var(--elev-raised)}
+.trash-row .t-title{font-size:14px;font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trash-row .t-time{font-size:11.5px;color:var(--meta);flex:none}
+.trash-actions{display:none;gap:2px;flex:none}
+.trash-row:hover .trash-actions{display:flex}
+.trash-row:hover .t-time{display:none}
+
+/* 鈹€鈹€鈹€ 缂栬緫鍖?鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€ */
+#editor{flex:1;display:flex;flex-direction:column;min-width:0;background:var(--bg);position:relative}
+.tabbar{display:flex;align-items:flex-end;gap:2px;padding:8px 10px 0;position:relative;flex:none}
+.tabbar::after{content:'';position:absolute;left:0;right:0;bottom:0;height:1px;background:var(--border-soft)}
+.tab{display:flex;align-items:center;gap:7px;max-width:210px;min-width:0;height:34px;padding:0 6px 0 12px;border-radius:10px 10px 0 0;font-size:13px;color:var(--fg-2);position:relative;z-index:1;cursor:pointer;transition:background-color var(--motion-fast) var(--ease-standard),color var(--motion-fast)}
+.tab:hover{background:color-mix(in oklab,var(--fg) 6%,transparent);color:var(--fg)}
+.tab.on{background:var(--bg);color:var(--fg);font-weight:500;margin-bottom:-1px;border-bottom:1px solid var(--bg)}
+.tab-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex:none}
+.tab-title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}
+.tab-x{width:18px;height:18px;border-radius:5px;display:grid;place-items:center;color:var(--meta);flex:none;transition:background-color var(--motion-fast),color var(--motion-fast)}
+.tab-x:hover{background:color-mix(in oklab,var(--fg) 14%,transparent);color:var(--fg)}
+.tab-x svg{width:10px;height:10px}
+.tab-add{width:28px;height:28px;align-self:center;border-radius:var(--radius-sm);display:grid;place-items:center;color:var(--meta);margin-left:2px;position:relative;z-index:1;flex:none}
+.tab-add:hover{background:color-mix(in oklab,var(--fg) 7%,transparent);color:var(--fg)}
+.tab-add svg{width:14px;height:14px}
+.editor-toolbar{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;border-bottom:1px solid var(--border-soft);gap:10px;flex:none}
+.fmt-group{display:flex;align-items:center;gap:2px;min-width:0}
+.fmt-btn{width:28px;height:28px;border-radius:7px;display:grid;place-items:center;color:var(--fg-2);transition:background-color var(--motion-fast),color var(--motion-fast),transform var(--motion-fast)}
+.fmt-btn:hover{background:color-mix(in oklab,var(--fg) 7%,transparent);color:var(--fg)}
+.fmt-btn:active{transform:scale(.9)}
+.fmt-btn svg{width:15px;height:15px}
+.fmt-h{font:700 13px/1 var(--font-display);letter-spacing:.01em}
+.fmt-h sup{font-size:8.5px;font-weight:700;vertical-align:super}
+.fmt-divider{width:1px;height:16px;background:var(--border-soft);margin:0 5px;flex:none}
+.seg-wrap{flex:none}
+.seg{position:relative;display:flex;background:color-mix(in oklab,var(--fg) 7%,transparent);border-radius:9px;padding:2px;width:196px}
+.seg-indi{position:absolute;top:2px;left:2px;width:64px;height:26px;border-radius:7px;background:var(--bg);box-shadow:0 1px 4px rgba(0,0,0,.12);transition:transform .22s var(--ease-standard)}
+html[data-theme="dark"] .seg-indi{box-shadow:0 1px 4px rgba(0,0,0,.5)}
+.seg-btn{position:relative;z-index:1;width:64px;height:26px;border-radius:7px;font-size:13px;color:var(--fg-2);transition:color var(--motion-fast)}
+.seg-btn:hover{color:var(--fg)}
+.seg-btn.on{color:var(--fg);font-weight:500}
+.jsonbar{display:flex;align-items:center;gap:8px;padding:6px 14px;border-bottom:1px solid var(--border-soft);background:color-mix(in oklab,var(--accent) 5%,var(--bg));flex:none}
+.jb-label{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--fg-2);flex:none}
+.jb-label svg{width:13px;height:13px;color:var(--accent)}
+.jb-btn{height:24px;padding:0 11px;border-radius:7px;font-size:12.5px;color:var(--fg-2);border:1px solid var(--border-soft);background:var(--bg);transition:background-color var(--motion-fast),border-color var(--motion-fast),color var(--motion-fast),box-shadow var(--motion-fast)}
+.jb-btn:hover{border-color:var(--border);color:var(--fg)}
+.jb-btn.on{background:var(--accent);border-color:var(--accent);color:var(--accent-on)}
+.jb-msg{margin-left:auto;font-size:12px;color:var(--muted);white-space:nowrap}
+.jb-msg.ok{color:var(--success)}
+.jb-msg.err{color:var(--danger)}
+.content{flex:1;min-height:0;position:relative;overflow:hidden;display:flex}
+.edit-pane{display:none;height:100%;overflow-y:auto}
+.preview-pane{display:none;height:100%;overflow-y:auto}
+.content.edit .edit-pane{display:block}
+.content.preview .preview-pane{display:block}
+.content.split .edit-pane{display:block;width:50%;border-right:1px solid var(--border-soft);flex:none}
+.content.split .preview-pane{display:block;width:50%;flex:none}
+.page{width:100%;max-width:780px;margin:0 auto;padding:34px 44px 90px}
+.title-input{font:600 28px/1.35 var(--font-display);letter-spacing:-.015em;width:100%;margin-bottom:16px;caret-color:var(--accent)}
+.title-input::placeholder{color:var(--meta)}
+.title-input:focus-visible,.body-input:focus-visible{box-shadow:0 0 0 3px color-mix(in oklab,var(--accent) 10%,transparent);border-radius:4px}
+.body-input{display:block;width:100%;min-height:52vh;resize:none;font-size:15px;line-height:1.75;caret-color:var(--accent);overflow:hidden}
+.body-input::placeholder{color:var(--meta)}
+.statusbar{display:flex;align-items:center;justify-content:space-between;height:28px;padding:0 16px;font-size:12px;color:var(--meta);border-top:1px solid var(--border-soft);background:color-mix(in oklab,var(--bg) 76%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);flex:none;user-select:none}
+.sb-right{display:flex;align-items:center}
+.save-state{display:flex;align-items:center;gap:6px;margin-left:16px;font-variant-numeric:tabular-nums}
+.save-dot{width:7px;height:7px;border-radius:50%;background:var(--meta);transition:background-color var(--motion-fast),box-shadow var(--motion-fast)}
+.save-state.saved .save-dot{background:var(--success);box-shadow:0 0 0 3px color-mix(in oklab,var(--success) 16%,transparent)}
+.save-state.saving .save-dot{background:var(--warn);box-shadow:0 0 0 3px color-mix(in oklab,var(--warn) 18%,transparent)}
+
+/* 鈹€鈹€鈹€ 绌虹姸鎬?鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€ */
+.idle{position:absolute;inset:0;display:grid;place-items:center;animation:fadeUp .35s var(--ease-standard)}
+.idle-inner{text-align:center;display:grid;justify-items:center;gap:8px;max-width:360px;padding:24px}
+.idle-illus{width:104px;height:104px;border-radius:50%;display:grid;place-items:center;margin-bottom:10px;background:linear-gradient(135deg,color-mix(in oklab,var(--accent) 82%,oklch(1 0 0)),oklch(.60 .21 295));box-shadow:0 16px 40px color-mix(in oklab,var(--accent) 32%,transparent);color:oklch(1 0 0);animation:popIn .4s var(--ease-standard)}
+.idle-illus svg{width:40px;height:40px;stroke-width:1.5}
+.idle h2{font:600 21px/1.3 var(--font-display);letter-spacing:-.01em}
+.idle p{font-size:13.5px;color:var(--muted);line-height:1.6}
+.idle .btn-primary{margin-top:10px}
+.kbd{font-family:var(--font-mono);font-size:11px;color:var(--meta);border:1px solid var(--border);border-bottom-width:2px;border-radius:5px;padding:1px 6px;background:color-mix(in oklab,var(--bg) 60%,transparent)}
+.idle .hint{font-size:12px;color:var(--meta);margin-top:6px}
+
+/* 鈹€鈹€鈹€ 棰勮鎺掔増锛堣嫻鏋滄枃绋块鏍硷級 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€ */
+.preview{font-size:15px;line-height:1.75;color:var(--fg);overflow-wrap:break-word}
+.preview h1{font:600 26px/1.3 var(--font-display);letter-spacing:-.015em;margin:30px 0 12px}
+.preview h2{font:600 21px/1.35 var(--font-display);letter-spacing:-.01em;margin:28px 0 10px}
+.preview h3{font:600 18px/1.4 var(--font-display);letter-spacing:-.005em;margin:22px 0 8px}
+.preview h1:first-child,.preview h2:first-child{margin-top:2px}
+.preview p{margin:10px 0}
+.preview ul,.preview ol{margin:12px 0;padding-left:24px;display:grid;gap:6px}
+.preview ul.tasklist{list-style:none;padding-left:2px}
+.preview li::marker{color:var(--meta)}
+.preview li.done{color:var(--muted);text-decoration:line-through;text-decoration-color:color-mix(in oklab,var(--fg) 35%,transparent)}
+.taskbox{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border:1.5px solid var(--meta);border-radius:5px;margin-right:9px;vertical-align:-3px;flex:none}
+.taskbox svg{width:9px;height:9px;color:var(--accent)}
+.preview blockquote{margin:16px 0;padding:3px 0 3px 16px;border-left:3px solid color-mix(in oklab,var(--accent) 55%,var(--meta));color:var(--muted)}
+.preview blockquote p{margin:6px 0}
+.preview code{font:13px/1.5 var(--font-mono);background:color-mix(in oklab,var(--fg) 8%,transparent);padding:2px 6px;border-radius:5px}
+.preview a{color:var(--accent);text-decoration:none}
+.preview a:hover{text-decoration:underline}
+.preview img{max-width:100%;border-radius:10px;margin:8px 0}
+.preview table{border-collapse:collapse;margin:16px 0;width:100%;font-size:14px}
+.preview th,.preview td{border:1px solid var(--border-soft);padding:8px 12px;text-align:left}
+.preview th{background:var(--surface);font-weight:600}
+.preview tr:hover td{background:color-mix(in oklab,var(--fg) 3%,transparent)}
+.preview hr{border:none;border-top:1px solid var(--border);margin:24px 0}
+
+/* 鈹€鈹€鈹€ 浠ｇ爜鍧楋紙鍙屼富棰樼粺涓€娣辫壊锛?鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€ */
+.codeblock{margin:16px 0;border-radius:var(--radius-md);background:oklch(.216 .017 259);box-shadow:0 6px 18px rgba(0,0,0,.18);overflow:hidden}
+.cb-head{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:oklch(.26 .017 259)}
+.cb-lang{font:600 11px/1 var(--font-mono);color:oklch(.72 .03 259);letter-spacing:.06em;text-transform:lowercase}
+.cb-copy{display:flex;align-items:center;gap:5px;font-size:12px;color:oklch(.76 .03 259);padding:4px 9px;border-radius:6px;transition:background-color var(--motion-fast),color var(--motion-fast)}
+.cb-copy:hover{background:rgba(255,255,255,.1);color:oklch(1 0 0)}
+.cb-copy svg{width:12px;height:12px}
+.codeblock pre{margin:0}
+.codeblock code{display:block;padding:14px 16px;overflow:auto;font:13px/1.7 var(--font-mono);color:oklch(.72 .015 265);white-space:pre}
+.tok-kw{color:oklch(.68 .19 316)}
+.tok-str{color:oklch(.77 .13 142)}
+.tok-num{color:oklch(.74 .11 74)}
+.tok-com{color:oklch(.63 .02 260);font-style:italic}
+.tok-fn{color:oklch(.74 .10 240)}
+.tok-tag{color:oklch(.68 .15 16)}
+.tok-attr{color:oklch(.74 .11 74)}
+.tok-key{color:oklch(.74 .10 240)}
+
+/* 鈹€鈹€鈹€ JSON 鏍戠姸瑙嗗浘 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€ */
+.jsonview{height:100%;overflow-y:auto}
+.jv-head{display:flex;align-items:center;gap:10px;padding:12px 22px;border-bottom:1px solid var(--border-soft);position:sticky;top:0;background:color-mix(in oklab,var(--bg) 86%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);z-index:5}
+.jv-title{display:flex;align-items:center;gap:7px;font:600 14px var(--font-display);letter-spacing:-.01em}
+.jv-title svg{width:15px;height:15px;color:var(--accent)}
+.jv-actions{margin-left:auto;display:flex;gap:6px}
+.jv-btn{height:26px;padding:0 11px;border-radius:7px;font-size:12.5px;color:var(--fg-2);border:1px solid var(--border-soft);background:var(--bg);transition:background-color var(--motion-fast),border-color var(--motion-fast),color var(--motion-fast)}
+.jv-btn:hover{border-color:var(--border);color:var(--fg)}
+.jtree{font:13px/1.85 var(--font-mono);padding:16px 24px 60px;max-width:900px;margin:0 auto}
+.jt-node{display:inline}
+.jt-row{display:inline-flex;align-items:center;gap:5px;cursor:default}
+.jt-caret{width:18px;height:18px;display:inline-grid;place-items:center;border-radius:5px;color:var(--meta);flex:none;vertical-align:-4px;transition:background-color var(--motion-fast),color var(--motion-fast)}
+.jt-caret svg{width:10px;height:10px;transition:transform .18s var(--ease-standard)}
+.jt-caret:hover{background:color-mix(in oklab,var(--fg) 8%,transparent);color:var(--fg)}
+.jt-caret.closed svg{transform:rotate(-90deg)}
+.jt-children{display:block;padding-left:21px;border-left:1px dashed color-mix(in oklab,var(--fg) 12%,transparent);margin-left:8px}
+.jt-children.closed{display:none}
+.jt-entry{white-space:nowrap}
+.jt-key{color:var(--accent)}
+.jt-idx{color:var(--meta)}
+.jt-punct{color:var(--meta)}
+.jt-bracket{color:var(--meta)}
+.jt-hint{font-family:var(--font-body);font-size:11px;color:var(--meta);margin-left:2px}
+.jt-str{color:oklch(.50 .13 152)}
+.jt-num{color:oklch(.52 .16 55)}
+.jt-bool{color:oklch(.47 .17 316)}
+.jt-null{color:var(--muted);font-style:italic}
+.jt-empty{color:var(--muted);font-family:var(--font-body);font-size:14px;padding:40px;text-align:center}
+
+/* 鈹€鈹€鈹€ 杞绘彁绀?鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€ */
+#toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,16px);background:oklch(.25 .005 280);color:oklch(.96 .002 285);font-size:13px;padding:9px 18px;border-radius:var(--radius-pill);box-shadow:0 10px 30px rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:opacity .25s var(--ease-standard),transform .25s var(--ease-standard);z-index:300}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+
+@media (max-width:1100px){#noteList{flex-basis:260px}}
+@media (max-width:1024px){#sidebar{flex-basis:200px}#sidebar.rail{flex-basis:56px}}
+
+
+/* ─── 应用附加样式（Vue 组件用） ─────────────────────────── */
+.edit-pane { padding: 28px 44px 0; max-width: 780px; margin: 0 auto; width: 100%; }
+.content.split .edit-pane { padding: 28px 28px 0; }
+.preview-pane .page { padding-top: 28px; }
+.jsonview { position: absolute; inset: 0; z-index: 30; background: var(--bg); }
+#editor { position: relative; }
+.cm-host { font-family: var(--font-body); }
+.cm-host .cm-editor.cm-focused { outline: none; }
