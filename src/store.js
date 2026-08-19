@@ -154,16 +154,52 @@ export function markDirty(path) {
 export async function doSave(path) {
   const tab = store.tabs.find((t) => t.path === path);
   if (!tab) return;
-  await api.writeNote(path, tab.content);
-  tab.dirty = false;
-  store.saveState = 'saved';
-  const meta = store.notes.find((n) => n.path === path);
-  if (meta) {
-    meta.excerpt = tab.content
-      .split(/\r?\n/)
-      .map((l) => l.replace(/^#{1,6}\s+/, '').trim())
-      .find((l) => l && !l.startsWith('```')) || '暂无内容';
+  try {
+    const savedMtime = await api.writeNote(path, tab.content, tab.mtime);
+    tab.mtime = savedMtime;
+    tab.dirty = false;
+    store.saveState = 'saved';
+    updateExcerpt(tab);
+  } catch (e) {
+    const msg = String(e);
+    if (msg.startsWith('CONFLICT:')) {
+      const { ask } = await import('@tauri-apps/plugin-dialog');
+      const overwrite = await ask('文件已被外部修改，是否用当前内容覆盖？', {
+        title: '文件冲突',
+        kind: 'warning',
+        okLabel: '覆盖',
+        cancelLabel: '重新加载',
+      });
+      if (overwrite) {
+        const savedMtime = await api.writeNote(path, tab.content, null);
+        tab.mtime = savedMtime;
+        tab.dirty = false;
+        store.saveState = 'saved';
+        updateExcerpt(tab);
+        toast('已覆盖外部修改');
+      } else {
+        const r = await api.readNote(path);
+        tab.content = r.content;
+        tab.mtime = r.mtime;
+        tab.dirty = false;
+        store.saveState = 'saved';
+        toast('已重新加载外部版本');
+      }
+    } else {
+      store.saveState = 'saved';
+      toast('保存失败：' + e);
+    }
   }
+}
+
+function updateExcerpt(tab) {
+  const meta = store.notes.find((n) => n.path === tab.path);
+  if (!meta) return;
+  const first = tab.content
+    .split(/\r?\n/)
+    .map((l) => l.replace(/^#{1,6}\s+/, '').trim())
+    .find((l) => l && !l.startsWith('```'));
+  meta.excerpt = first || '暂无内容';
 }
 
 /* ── 元数据操作 ───────────────────────────────────────── */

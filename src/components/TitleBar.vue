@@ -1,12 +1,12 @@
 <template>
-  <header class="titlebar">
+  <header class="titlebar" data-tauri-drag-region>
     <div class="traffic" aria-hidden="true">
-      <span class="tl red" title="关闭"></span>
-      <span class="tl yellow" title="最小化"></span>
-      <span class="tl green" title="最大化"></span>
+      <span class="tl red" title="关闭" @click="winClose"></span>
+      <span class="tl yellow" title="最小化" @click="winMin"></span>
+      <span class="tl green" title="最大化" @click="winMax"></span>
     </div>
 
-    <div class="brand">
+    <div class="brand" data-tauri-drag-region>
       <span class="brand-icon"><Icon name="file" /></span>
       <span class="brand-name">记事本</span>
     </div>
@@ -93,7 +93,20 @@ import { ref, computed } from 'vue';
 import Icon from './Icon.vue';
 import { store, toggleTheme, applyTheme, createNote, searchNotes, toast } from '../store.js';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import { debounce } from '../lib/utils.js';
+
+const appWindow = getCurrentWindow();
+
+function winMin() {
+  appWindow.minimize();
+}
+function winMax() {
+  appWindow.toggleMaximize();
+}
+function winClose() {
+  appWindow.close();
+}
 
 const popOpen = ref(false);
 

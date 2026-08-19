@@ -157,12 +157,33 @@ pub async fn read_note(path: String) -> Result<NoteContent, String> {
     })
 }
 
-#[tauri::command]
-pub async fn write_note(path: String, content: String) -> Result<(), String> {
-    let root = data_dir()?;
-    let file = resolve(&root, &path)?;
+/// 内部纯函数：写入笔记（供命令与测试复用）。expected_mtime 不匹配时返回 CONFLICT。
+/// 成功返回写入后的 mtime（供前端更新冲突基线）。
+pub fn write_note_inner(
+    root: &Path,
+    rel: &str,
+    content: &str,
+    expected_mtime: Option<u64>,
+) -> Result<u64, String> {
+    let file = resolve(root, rel)?;
+    if let Some(exp) = expected_mtime {
+        let cur = mtime_ms(&file);
+        if cur != exp {
+            return Err(format!("CONFLICT:{cur}"));
+        }
+    }
     std::fs::write(&file, content).map_err(|e| e.to_string())?;
-    Ok(())
+    Ok(mtime_ms(&file))
+}
+
+#[tauri::command]
+pub async fn write_note(
+    path: String,
+    content: String,
+    expected_mtime: Option<u64>,
+) -> Result<u64, String> {
+    let root = data_dir()?;
+    write_note_inner(&root, &path, &content, expected_mtime)
 }
 
 #[tauri::command]
@@ -208,7 +229,7 @@ pub async fn delete_note(path: String) -> Result<(), String> {
         .file_name()
         .map(|s| s.to_string_lossy().to_string())
         .unwrap_or_else(|| "note.md".into());
-    let target = unique_path(&trash_dir, &name.trim_end_matches(".md"), ".md");
+    let target = unique_path(&trash_dir, name.trim_end_matches(".md"), ".md");
     let target_name = target
         .file_name()
         .map(|s| s.to_string_lossy().to_string())
@@ -246,7 +267,7 @@ pub async fn list_trash() -> Result<Vec<TrashEntryView>, String> {
             }
         }
     }
-    out.sort_by(|a, b| b.deleted_at.cmp(&a.deleted_at));
+    out.sort_by_key(|t| std::cmp::Reverse(t.deleted_at));
     Ok(out)
 }
 
@@ -264,7 +285,7 @@ pub async fn restore_note(name: String) -> Result<(), String> {
         .map(|t| t.original.clone())
         .unwrap_or_default();
     let target = if original.is_empty() {
-        unique_path(&root, &name.trim_end_matches(".md"), ".md")
+        unique_path(&root, name.trim_end_matches(".md"), ".md")
     } else {
         let dir = match original.rsplit_once('/') {
             Some((d, _)) if !d.is_empty() => resolve(&root, d)?,
@@ -273,7 +294,7 @@ pub async fn restore_note(name: String) -> Result<(), String> {
         std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
         unique_path(
             &dir,
-            &original
+            original
                 .rsplit('/')
                 .next()
                 .unwrap_or(&name)

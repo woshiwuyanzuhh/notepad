@@ -8,7 +8,8 @@ export const api = {
 
   listNotes: () => invoke('list_notes'),
   readNote: (path) => invoke('read_note', { path }),
-  writeNote: (path, content) => invoke('write_note', { path, content }),
+  writeNote: (path, content, expectedMtime = null) =>
+    invoke('write_note', { path, content, expectedMtime }),
   createNote: (folder, title) => invoke('create_note', { folder, title }),
   setNoteMeta: (path, meta) =>
     invoke('set_note_meta', {

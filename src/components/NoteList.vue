@@ -73,15 +73,12 @@
         </div>
       </template>
     </div>
-
-    <EmptyState v-if="store.notes.length === 0 && store.filter.kind !== 'trash'" />
   </section>
 </template>
 
 <script setup>
 import { computed } from 'vue';
 import Icon from './Icon.vue';
-import EmptyState from './EmptyState.vue';
 import { store, openNote, toggleStar, togglePin, moveToTrash, restoreNote, purgeNote } from '../store.js';
 import { visibleNotes } from '../store.js';
 import { relTime } from '../lib/utils.js';
