@@ -1,11 +1,5 @@
 <template>
   <header class="titlebar" data-tauri-drag-region>
-    <div class="traffic" aria-hidden="true">
-      <span class="tl red" title="关闭" @click="winClose"></span>
-      <span class="tl yellow" title="最小化" @click="winMin"></span>
-      <span class="tl green" title="最大化" @click="winMax"></span>
-    </div>
-
     <div class="brand" data-tauri-drag-region>
       <span class="brand-icon"><Icon name="file" /></span>
       <span class="brand-name">记事本</span>
@@ -38,6 +32,15 @@
         @click="onNewNote"
       >
         <Icon name="plus" />
+      </button>
+      <button
+        type="button"
+        class="icon-btn"
+        :title="store.pureMode ? '退出纯净模式（Esc）' : '纯净编辑模式（无侧栏）'"
+        aria-label="纯净编辑模式"
+        @click="store.pureMode = !store.pureMode"
+      >
+        <Icon :name="store.pureMode ? 'collapse' : 'expand'" />
       </button>
       <button
         type="button"
@@ -80,10 +83,23 @@
             <span>笔记文件夹</span>
             <span class="po-meta dir-name" :title="store.dataDir">{{ dirLabel }}</span>
           </div>
-          <div class="po-note">所有笔记仅保存在本地 Markdown 文件中，不会上传到云端。</div>
+          <div class="po-note">所有笔记仅保存在本地 Markdown / 文本文件中，不会上传到云端。</div>
           <div class="po-row"><span>关于记事本</span><span class="po-meta">v0.1.0</span></div>
         </div>
       </div>
+    </div>
+
+    <!-- Windows 窗口控制（右上角） -->
+    <div class="win-controls">
+      <button type="button" class="wc-btn" title="最小化" aria-label="最小化" @click="winMin">
+        <Icon name="min" />
+      </button>
+      <button type="button" class="wc-btn" title="最大化" aria-label="最大化" @click="winMax">
+        <Icon name="max" />
+      </button>
+      <button type="button" class="wc-btn wc-close" title="关闭" aria-label="关闭" @click="winClose">
+        <Icon name="x" />
+      </button>
     </div>
   </header>
 </template>
@@ -99,13 +115,13 @@ import { debounce } from '../lib/utils.js';
 const appWindow = getCurrentWindow();
 
 function winMin() {
-  appWindow.minimize();
+  appWindow.minimize().catch((e) => toast('最小化失败：' + e));
 }
 function winMax() {
-  appWindow.toggleMaximize();
+  appWindow.toggleMaximize().catch((e) => toast('最大化失败：' + e));
 }
 function winClose() {
-  appWindow.close();
+  appWindow.close().catch((e) => toast('关闭失败：' + e));
 }
 
 const popOpen = ref(false);

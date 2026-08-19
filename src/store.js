@@ -22,6 +22,7 @@ export const store = reactive({
 
   theme: 'light',
   rail: false,
+  pureMode: false,
   mode: 'split', // edit | preview | split
   jsonOpen: false,
 
@@ -122,8 +123,8 @@ export async function openNote(path) {
   store.q = '';
 }
 
-export async function createNote(folder, title) {
-  const path = await api.createNote(folder, title);
+export async function createNote(folder, title, format = 'md') {
+  const path = await api.createNote(folder, title, format);
   await refreshNotes();
   await openNote(path);
   return path;

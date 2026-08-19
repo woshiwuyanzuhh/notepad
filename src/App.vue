@@ -3,8 +3,8 @@
     <TitleBar />
 
     <main id="main">
-      <Sidebar />
-      <NoteList />
+      <Sidebar v-if="!store.pureMode" />
+      <NoteList v-if="!store.pureMode" />
       <EditorArea />
     </main>
 
@@ -24,6 +24,10 @@ import Onboarding from './components/Onboarding.vue';
 import { store, init, createNote, doSave, closeTab, activeTab } from './store.js';
 
 function onKeydown(e) {
+  if (e.key === 'Escape' && store.pureMode) {
+    store.pureMode = false;
+    return;
+  }
   const mod = e.ctrlKey || e.metaKey;
   if (!mod) return;
   const key = e.key.toLowerCase();

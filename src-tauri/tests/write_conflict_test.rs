@@ -20,6 +20,7 @@ fn write_conflict_detection() {
     fs::create_dir_all(root.join(".trash")).unwrap();
     let file = root.join("a.md");
     fs::write(&file, "v1").unwrap();
+    std::thread::sleep(std::time::Duration::from_millis(5));
     let m1 = ms_of(&file);
 
     // 匹配 mtime → 允许写入

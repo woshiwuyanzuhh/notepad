@@ -64,6 +64,10 @@ const PATHS = {
   image: ['M21 15l-5-5-9 9'],
   sidebar: ['M3 5h18v14H3z', 'M9 5v14'],
   note: ['M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z', 'M14 2v6h6', 'M9 13h6M9 17h6'],
+  min: ['M5 12h14'],
+  max: ['M5 5h14v14H5z'],
+  expand: ['M15 3h6v6', 'M9 21H3v-6', 'M21 3l-7 7', 'M3 21l7-7'],
+  collapse: ['M21 15h-6v6', 'M3 9h6V3', 'M15 21l7-7', 'M9 3l-7 7'],
 };
 
 const paths = computed(() => PATHS[props.name] || []);

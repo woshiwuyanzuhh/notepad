@@ -19,22 +19,24 @@ fn ensure_inside_rejects_escape() {
 }
 
 #[test]
-fn scan_markdown_finds_md_files_and_skips_trash() {
+fn scan_markdown_finds_md_and_txt_files_and_skips_trash() {
     let dir = tempfile::tempdir().unwrap();
     let root = dir.path();
     fs::create_dir_all(root.join("工作/会议记录")).unwrap();
     fs::create_dir_all(root.join(".trash")).unwrap();
     fs::write(root.join("工作/会议记录/a.md"), "x").unwrap();
     fs::write(root.join("b.md"), "x").unwrap();
+    fs::write(root.join("随手记.txt"), "x").unwrap();
     fs::write(root.join(".trash/old.md"), "x").unwrap();
-    fs::write(root.join("note.txt"), "x").unwrap();
+    fs::write(root.join("note.log"), "x").unwrap();
     let files = scan_markdown(root);
     let names: Vec<String> = files.iter().map(|p| relative_path(root, p)).collect();
     assert!(names.contains(&"工作/会议记录/a.md".to_string()));
     assert!(names.contains(&"b.md".to_string()));
+    assert!(names.contains(&"随手记.txt".to_string()));
     assert!(!names.iter().any(|n| n.contains(".trash")));
-    assert!(!names.iter().any(|n| n.ends_with(".txt")));
-    assert_eq!(names.len(), 2);
+    assert!(!names.iter().any(|n| n.ends_with(".log")));
+    assert_eq!(names.len(), 3);
 }
 
 #[test]

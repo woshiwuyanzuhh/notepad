@@ -18,12 +18,74 @@ import { searchKeymap, highlightSelectionMatches } from '@codemirror/search';
 
 const props = defineProps({
   content: { type: String, default: '' },
+  isMarkdown: { type: Boolean, default: true },
 });
 const emit = defineEmits(['update:content']);
 
 const host = ref(null);
 let view = null;
 let applyingExternal = false;
+
+function buildExtensions() {
+  const exts = [
+    history(),
+    highlightSelectionMatches(),
+    keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap, indentWithTab]),
+    placeholder('开始输入…'),
+    notepadTheme,
+    EditorView.lineWrapping,
+    EditorView.updateListener.of((u) => {
+      if (u.docChanged) {
+        applyingExternal = true;
+        emit('update:content', u.state.doc.toString());
+        applyingExternal = false;
+      }
+    }),
+  ];
+  if (props.isMarkdown) {
+    exts.unshift(markdown({ codeLanguages: languages }));
+  }
+  return exts;
+}
+
+function createState() {
+  return EditorState.create({
+    doc: props.content,
+    extensions: buildExtensions(),
+  });
+}
+
+onMounted(() => {
+  view = new EditorView({ state: createState(), parent: host.value });
+});
+
+watch(
+  () => props.content,
+  (val) => {
+    if (!view || applyingExternal) return;
+    if (view.state.doc.toString() !== val) {
+      view.dispatch({
+        changes: { from: 0, to: view.state.doc.length, insert: val },
+      });
+    }
+  },
+);
+
+watch(
+  () => props.isMarkdown,
+  () => {
+    if (!view) return;
+    const doc = view.state.doc.toString();
+    view.destroy();
+    view = new EditorView({ state: createState(), parent: host.value });
+    // 重建后恢复文档内容
+    if (view.state.doc.toString() !== doc) {
+      view.dispatch({
+        changes: { from: 0, to: view.state.doc.length, insert: doc },
+      });
+    }
+  },
+);
 
 const notepadTheme = EditorView.theme({
   '&': {

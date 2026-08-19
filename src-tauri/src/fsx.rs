@@ -28,8 +28,8 @@ fn absolutize(p: &Path) -> PathBuf {
     out
 }
 
-/// 递归扫描 root 下所有 .md 文件（排除 .trash 与隐藏目录），返回相对路径（正斜杠）。
-pub fn scan_markdown(root: &Path) -> Vec<PathBuf> {
+/// 递归扫描 root 下所有笔记文件（.md / .txt，排除 .trash 与隐藏目录），返回相对路径（正斜杠）。
+pub fn scan_notes(root: &Path) -> Vec<PathBuf> {
     let mut out = Vec::new();
     let mut stack = vec![root.to_path_buf()];
     while let Some(dir) = stack.pop() {
@@ -45,13 +45,18 @@ pub fn scan_markdown(root: &Path) -> Vec<PathBuf> {
             }
             if path.is_dir() {
                 stack.push(path);
-            } else if name.ends_with(".md") {
+            } else if name.ends_with(".md") || name.ends_with(".txt") {
                 out.push(path);
             }
         }
     }
     out.sort();
     out
+}
+
+/// 兼容旧名：等价于 scan_notes
+pub fn scan_markdown(root: &Path) -> Vec<PathBuf> {
+    scan_notes(root)
 }
 
 /// 提取首行非空正文作为摘要：跳过标题/代码块/空行，超长截断。

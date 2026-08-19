@@ -1,6 +1,6 @@
 //! commands.rs — Tauri commands：数据目录 / 笔记 CRUD / 元数据 / 回收站 / 搜索
 
-use crate::fsx::{excerpt_of, relative_path, resolve, scan_markdown};
+use crate::fsx::{excerpt_of, relative_path, resolve, scan_notes};
 use crate::meta::{
     add_trash_entry, load_meta, remove_trash_entry, save_meta, set_note_meta as set_meta_field,
     trash_records, MetaFile,
@@ -112,7 +112,7 @@ pub async fn list_notes() -> Result<Vec<NoteMeta>, String> {
     let root = data_dir()?;
     let meta = load_meta(&root);
     let mut out = Vec::new();
-    for file in scan_markdown(&root) {
+    for file in scan_notes(&root) {
         let rel = relative_path(&root, &file);
         let md = std::fs::metadata(&file).map_err(|e| e.to_string())?;
         let entry = meta.notes.get(&rel);
@@ -187,16 +187,28 @@ pub async fn write_note(
 }
 
 #[tauri::command]
-pub async fn create_note(folder: Option<String>, title: String) -> Result<String, String> {
+pub async fn create_note(
+    folder: Option<String>,
+    title: String,
+    format: Option<String>,
+) -> Result<String, String> {
     let root = data_dir()?;
+    let fmt = match format.as_deref() {
+        Some("txt") => "txt",
+        _ => "md",
+    };
     let stem = sanitize_name(&title);
     let dir = match folder {
         Some(f) if !f.trim().is_empty() => resolve(&root, f.trim())?,
         _ => root.clone(),
     };
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-    let file = unique_path(&dir, &stem, ".md");
-    let body = format!("# {stem}\n\n");
+    let file = unique_path(&dir, &stem, &format!(".{fmt}"));
+    let body = if fmt == "md" {
+        format!("# {stem}\n\n")
+    } else {
+        String::new()
+    };
     std::fs::write(&file, body).map_err(|e| e.to_string())?;
     Ok(relative_path(&root, &file))
 }

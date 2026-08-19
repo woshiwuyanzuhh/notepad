@@ -1,6 +1,6 @@
 //! search.rs — 全文搜索（遍历数据目录 .md 文件）
 
-use crate::fsx::{excerpt_of, relative_path, scan_markdown};
+use crate::fsx::{excerpt_of, relative_path, scan_notes};
 use serde::Serialize;
 use std::path::Path;
 
@@ -17,7 +17,7 @@ pub fn search_dir(root: &Path, q: &str) -> Vec<SearchHit> {
         return vec![];
     }
     let mut hits = Vec::new();
-    for file in scan_markdown(root) {
+    for file in scan_notes(root) {
         let content = match std::fs::read_to_string(&file) {
             Ok(c) => c,
             Err(_) => continue,

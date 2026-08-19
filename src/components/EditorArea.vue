@@ -12,6 +12,7 @@
           <EditorPane
             ref="editorPane"
             :content="tab.content"
+            :is-markdown="!tab.path.toLowerCase().endsWith('.txt')"
             @update:content="onContent"
           />
         </div>
