@@ -1,7 +1,12 @@
-// markdown.js — markdown-it + highlight.js 渲染（设计稿 codeblock 结构）
+// markdown.js — markdown-it + highlight.js + KaTeX 渲染
 
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js/lib/common';
+import katex from 'katex';
+import texmath from 'markdown-it-texmath';
+import taskLists from 'markdown-it-task-lists';
+import 'katex/dist/katex.min.css';
+import { convertFileSrc } from '@tauri-apps/api/core';
 
 // highlight.js class → 设计稿 tok-* class 映射
 const HLJS_CLASS_MAP = {
@@ -66,11 +71,40 @@ const md = new MarkdownIt({
   breaks: false,
 });
 
-// 自定义 fence：设计稿 codeblock 结构（深色容器 + 语言徽章 + 复制按钮）
-const defaultFence =
-  md.renderer.rules.fence ||
-  ((tokens, idx, options, env, self) => self.renderToken(tokens, idx, options));
+// LaTeX 公式：$...$ 行内、$$...$$ 块级
+md.use(texmath, {
+  engine: katex,
+  delimiters: 'dollars',
+  katexOptions: { throwOnError: false, output: 'html' },
+});
 
+// 任务列表：- [x] / - [ ]
+md.use(taskLists, { enabled: true, label: true, labelAfter: true });
+
+/** 将笔记内的相对资源路径（如 assets/x.png）解析为可加载 URL */
+export function resolveAssetUrl(src, baseDir) {
+  if (!src || !baseDir) return src;
+  if (/^(https?:|data:|blob:|asset\.localhost)/i.test(src)) return src;
+  if (/^[A-Za-z]:[\\/]/.test(src)) return src; // 已是绝对路径
+  const joined = baseDir.replace(/\\/g, '/').replace(/\/+$/, '') + '/' + src;
+  try {
+    return convertFileSrc(joined);
+  } catch {
+    return src;
+  }
+}
+
+// 自定义图片渲染：相对路径 → 数据目录绝对资源
+md.renderer.rules.image = (tokens, idx, options, env) => {
+  const token = tokens[idx];
+  const src = token.attrGet('src') || '';
+  const alt = token.content || '';
+  const baseDir = env && env.baseDir ? env.baseDir : null;
+  const url = resolveAssetUrl(src, baseDir);
+  return `<img src="${escapeHtml(url)}" alt="${escapeHtml(alt)}" loading="lazy">`;
+};
+
+// 自定义 fence：设计稿 codeblock 结构（深色容器 + 语言徽章 + 复制按钮）
 md.renderer.rules.fence = (tokens, idx) => {
   const token = tokens[idx];
   const lang = (token.info.trim().split(/\s+/)[0] || 'text').toLowerCase();
@@ -87,7 +121,16 @@ md.renderer.rules.fence = (tokens, idx) => {
   );
 };
 
-/** 渲染 Markdown → HTML（含代码高亮、任务列表、表格） */
-export function renderMarkdown(src) {
-  return md.render(String(src || ''));
+/**
+ * 渲染 Markdown → HTML（代码高亮、KaTeX 公式、本地图片路径解析）。
+ * @param {string} src
+ * @param {string|null} baseDir 数据目录绝对路径（用于解析 assets/ 图片）
+ */
+export function renderMarkdown(src, baseDir = null) {
+  const html = md.render(String(src || ''), { baseDir });
+  // 任务列表类名映射到设计稿样式（tasklist）——先替换最长的类名
+  return html
+    .replace(/task-list-item-checkbox/g, 'task-check')
+    .replace(/task-list-item/g, 'task-item')
+    .replace(/contains-task-list/g, 'tasklist');
 }

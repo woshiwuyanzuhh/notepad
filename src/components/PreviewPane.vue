@@ -7,13 +7,13 @@
 <script setup>
 import { computed } from 'vue';
 import { renderMarkdown } from '../lib/markdown.js';
-import { toast } from '../store.js';
+import { toast, store } from '../store.js';
 
 const props = defineProps({
   content: { type: String, default: '' },
 });
 
-const html = computed(() => renderMarkdown(props.content));
+const html = computed(() => renderMarkdown(props.content, store.dataDir));
 
 function onPreviewClick(e) {
   const btn = e.target.closest('.cb-copy');

@@ -1,6 +1,6 @@
 // write_note 冲突检测测试：expectedMtime 不匹配时拒绝写入
 use std::fs;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::UNIX_EPOCH;
 
 fn ms_of(p: &std::path::Path) -> u64 {
     fs::metadata(p)

@@ -15,6 +15,7 @@ import {
   indentWithTab,
 } from '@codemirror/commands';
 import { searchKeymap, highlightSelectionMatches } from '@codemirror/search';
+import { store } from '../store.js';
 
 const props = defineProps({
   content: { type: String, default: '' },
@@ -33,7 +34,6 @@ function buildExtensions() {
     keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap, indentWithTab]),
     placeholder('开始输入…'),
     notepadTheme,
-    EditorView.lineWrapping,
     EditorView.updateListener.of((u) => {
       if (u.docChanged) {
         applyingExternal = true;
@@ -44,6 +44,10 @@ function buildExtensions() {
   ];
   if (props.isMarkdown) {
     exts.unshift(markdown({ codeLanguages: languages }));
+  }
+  // md 始终换行；txt 由 store.wrapTxt 决定（默认关闭 → 水平滚动）
+  if (props.isMarkdown || store.wrapTxt) {
+    exts.push(EditorView.lineWrapping);
   }
   return exts;
 }
@@ -74,28 +78,40 @@ watch(
 watch(
   () => props.isMarkdown,
   () => {
-    if (!view) return;
-    const doc = view.state.doc.toString();
-    view.destroy();
-    view = new EditorView({ state: createState(), parent: host.value });
-    // 重建后恢复文档内容
-    if (view.state.doc.toString() !== doc) {
-      view.dispatch({
-        changes: { from: 0, to: view.state.doc.length, insert: doc },
-      });
-    }
+    rebuild();
   },
 );
+
+watch(
+  () => store.wrapTxt,
+  () => {
+    rebuild();
+  },
+);
+
+function rebuild() {
+  if (!view) return;
+  const doc = view.state.doc.toString();
+  const sel = view.state.selection.main;
+  view.destroy();
+  const state = createState();
+  view = new EditorView({ state, parent: host.value });
+  // 恢复文档与光标
+  if (view.state.doc.toString() !== doc) {
+    view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: doc } });
+  }
+  view.dispatch({ selection: { anchor: Math.min(sel.anchor, doc.length) } });
+}
 
 const notepadTheme = EditorView.theme({
   '&': {
     height: '100%',
-    fontSize: '15px',
+    fontSize: 'var(--editor-font-size, 15px)',
     backgroundColor: 'transparent',
     color: 'var(--fg)',
   },
   '.cm-content': {
-    fontFamily: 'var(--font-body)',
+    fontFamily: 'var(--editor-font, var(--font-body))',
     lineHeight: '1.75',
     padding: '0 0 60px',
     caretColor: 'var(--accent)',
@@ -174,13 +190,33 @@ const LINE_PRE = {
   quote: '> ',
 };
 
-function format(kind) {
+/** 在光标处插入文本（用于图片等自定义插入） */
+function insertText(text) {
+  if (!view) return;
+  const { from } = view.state.selection.main;
+  view.dispatch({
+    changes: { from, insert: text },
+    selection: { anchor: from + text.length },
+  });
+  view.focus();
+}
+
+function format(kind, custom) {
   if (!view) return;
   const wrap = WRAP[kind];
   if (wrap) {
     const { from, to } = view.state.selection.main;
     const selected = view.state.doc.sliceString(from, to);
     const text = selected || wrap.hint;
+    if (custom) {
+      const [post, hint] = custom;
+      const body = selected || hint;
+      view.dispatch({
+        changes: { from, to, insert: wrap.pre + body + post },
+        selection: { anchor: from + wrap.pre.length, head: from + wrap.pre.length + body.length },
+      });
+      return;
+    }
     view.dispatch({
       changes: { from, to, insert: wrap.pre + text + wrap.post },
       selection: { anchor: from + wrap.pre.length, head: from + wrap.pre.length + text.length },
@@ -198,7 +234,7 @@ function format(kind) {
   }
 }
 
-defineExpose({ format });
+defineExpose({ format, insertText });
 </script>
 
 <style>

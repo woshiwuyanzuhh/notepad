@@ -24,15 +24,34 @@
     </div>
 
     <div class="tb-actions">
-      <button
-        type="button"
-        class="icon-btn accent"
-        title="新建笔记（Ctrl+N）"
-        aria-label="新建笔记"
-        @click="onNewNote"
-      >
-        <Icon name="plus" />
-      </button>
+      <div class="new-wrap">
+        <button
+          type="button"
+          class="icon-btn accent"
+          title="新建笔记（Ctrl+N）"
+          aria-label="新建笔记"
+          @click="onNewNote('md')"
+        >
+          <Icon name="plus" />
+        </button>
+        <button
+          type="button"
+          class="icon-btn new-caret"
+          title="选择新建格式"
+          aria-label="选择新建格式"
+          @click.stop="newPop = !newPop"
+        >
+          <Icon name="chevron" cls="new-caret-ico" />
+        </button>
+        <div class="popover new-pop" :class="{ open: newPop }">
+          <button type="button" class="po-row" @click="onNewNote('md')">
+            <span>Markdown 笔记</span><span class="po-meta">.md</span>
+          </button>
+          <button type="button" class="po-row" @click="onNewNote('txt')">
+            <span>文本笔记</span><span class="po-meta">.txt</span>
+          </button>
+        </div>
+      </div>
       <button
         type="button"
         class="icon-btn"
@@ -79,6 +98,23 @@
               </button>
             </span>
           </div>
+          <div class="po-row">
+            <span>编辑器字体</span>
+            <select
+              class="po-select"
+              :value="store.fontFamily"
+              @change="setFontFamily($event.target.value)"
+            >
+              <option value="">默认</option>
+              <option v-for="f in store.fonts" :key="f" :value="f">{{ f }}</option>
+            </select>
+          </div>
+          <div class="po-row">
+            <span>字号</span>
+            <select class="po-select" :value="store.fontSize" @change="setFontSize(Number($event.target.value))">
+              <option v-for="s in [12, 13, 14, 15, 16, 18, 20, 24]" :key="s" :value="s">{{ s }} px</option>
+            </select>
+          </div>
           <div class="po-row" @click="onChooseDir">
             <span>笔记文件夹</span>
             <span class="po-meta dir-name" :title="store.dataDir">{{ dirLabel }}</span>
@@ -107,7 +143,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import Icon from './Icon.vue';
-import { store, toggleTheme, applyTheme, createNote, searchNotes, toast } from '../store.js';
+import { store, toggleTheme, applyTheme, createNote, searchNotes, toast, setFontFamily, setFontSize } from '../store.js';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { debounce } from '../lib/utils.js';
@@ -125,6 +161,7 @@ function winClose() {
 }
 
 const popOpen = ref(false);
+const newPop = ref(false);
 
 const dirLabel = computed(() => {
   if (!store.dataDir) return '未设置';
@@ -142,11 +179,12 @@ function clearSearch() {
   searchNotes('');
 }
 
-async function onNewNote() {
+async function onNewNote(format = 'md') {
   const folder = store.filter.kind === 'folder' ? store.filter.value : null;
   try {
-    await createNote(folder, '新笔记');
+    await createNote(folder, '新笔记', format);
     popOpen.value = false;
+    newPop.value = false;
   } catch (e) {
     toast('新建失败：' + e);
   }
@@ -176,5 +214,41 @@ async function onChooseDir() {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.new-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+}
+.new-caret {
+  width: 14px;
+}
+.new-caret-ico {
+  width: 10px !important;
+  height: 10px !important;
+}
+.new-pop {
+  width: 190px;
+  left: 0;
+  right: auto;
+}
+.new-pop .po-row {
+  width: 100%;
+  text-align: left;
+}
+.po-select {
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--fg-2);
+  background: var(--bg);
+  border: 1px solid var(--border-soft);
+  border-radius: 7px;
+  padding: 3px 6px;
+  max-width: 150px;
+  outline: none;
+}
+.po-select:focus {
+  border-color: var(--accent);
 }
 </style>

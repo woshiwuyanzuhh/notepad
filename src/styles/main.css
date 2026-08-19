@@ -618,3 +618,10 @@ html[data-theme="dark"] .seg-indi{box-shadow:0 1px 4px rgba(0,0,0,.5)}
 #editor { position: relative; }
 .cm-host { font-family: var(--font-body); }
 .cm-host .cm-editor.cm-focused { outline: none; }
+
+/* ─── 任务列表（markdown-it-task-lists） ─────────────────── */
+.preview ul.tasklist{list-style:none;padding-left:2px}
+.preview .task-item{display:flex;align-items:flex-start;gap:8px}
+.preview .task-item:has(.task-check:checked){color:var(--muted);text-decoration:line-through;text-decoration-color:color-mix(in oklab,var(--fg) 35%,transparent)}
+.preview .task-check{width:15px;height:15px;accent-color:var(--accent);flex:none;margin-top:4px}
+.preview .task-item:has(.task-check:checked) .task-check{accent-color:var(--meta)}

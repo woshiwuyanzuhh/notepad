@@ -40,8 +40,9 @@ import JsonBar from './JsonBar.vue';
 import JsonTree from './JsonTree.vue';
 import StatusBar from './StatusBar.vue';
 import EmptyState from './EmptyState.vue';
-import { store, activeTab, markDirty, createNote } from '../store.js';
+import { store, activeTab, markDirty, createNote, toast } from '../store.js';
 import { detectJson } from '../lib/json-tools.js';
+import { api } from '../lib/api.js';
 
 const editorPane = ref(null);
 const jsonBar = ref(null);
@@ -67,7 +68,40 @@ function onFormatJson(text) {
 }
 
 function onFormat(kind) {
-  if (editorPane.value) editorPane.value.format(kind);
+  if (kind === 'image') {
+    insertImage();
+    return;
+  }
+  // 预览模式下点击格式按钮 → 自动切回编辑再插入
+  if (store.mode === 'preview') {
+    store.mode = 'edit';
+    nextTick(() => {
+      if (editorPane.value) editorPane.value.format(kind);
+    });
+  } else if (editorPane.value) {
+    editorPane.value.format(kind);
+  }
+}
+
+async function insertImage() {
+  const { open: openDialog } = await import('@tauri-apps/plugin-dialog');
+  const file = await openDialog({
+    multiple: false,
+    title: '插入图片',
+    filters: [
+      { name: '图片', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg'] },
+    ],
+  });
+  if (typeof file !== 'string') return;
+  try {
+    const rel = await api.importImage(file);
+    if (editorPane.value) {
+      const name = rel.split('/').pop().replace(/\.[^.]+$/, '');
+      editorPane.value.insertText(`\n![${name}](${rel})\n`);
+    }
+  } catch (e) {
+    toast('图片导入失败：' + e);
+  }
 }
 
 async function onNewNote() {

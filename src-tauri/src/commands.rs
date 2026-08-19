@@ -337,6 +337,85 @@ pub async fn search(q: String) -> Result<Vec<SearchHit>, String> {
     Ok(search_dir(&root, &q))
 }
 
+/// 内部纯函数：导入图片到数据目录 assets/，返回相对路径（如 assets/xx.png）。
+pub fn import_image_inner(root: &Path, source: &str) -> Result<String, String> {
+    let src = PathBuf::from(source);
+    if !src.is_file() {
+        return Err("图片文件不存在".to_string());
+    }
+    let ext = src
+        .extension()
+        .map(|e| e.to_string_lossy().to_lowercase())
+        .unwrap_or_default();
+    if !matches!(ext.as_str(), "png" | "jpg" | "jpeg" | "gif" | "webp" | "bmp" | "svg") {
+        return Err(format!("不支持的图片格式: {ext}"));
+    }
+    let assets = root.join("assets");
+    std::fs::create_dir_all(&assets).map_err(|e| e.to_string())?;
+    let stem = src
+        .file_stem()
+        .map(|s| s.to_string_lossy().to_string())
+        .unwrap_or_else(|| "image".into());
+    let target = unique_path(&assets, &stem, &format!(".{ext}"));
+    std::fs::copy(&src, &target).map_err(|e| e.to_string())?;
+    Ok(relative_path(root, &target))
+}
+
+#[tauri::command]
+pub async fn import_image(source: String) -> Result<String, String> {
+    let root = data_dir()?;
+    import_image_inner(&root, &source)
+}
+
+/// 枚举本机已安装字体（注册表 Fonts 键），返回字体族名列表。
+#[cfg(windows)]
+pub fn list_fonts_inner() -> Result<Vec<String>, String> {
+    use winreg::enums::{HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE, KEY_READ};
+    use winreg::RegKey;
+
+    let mut names: Vec<String> = Vec::new();
+    let subkey = r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts";
+    for hive in [
+        RegKey::predef(HKEY_LOCAL_MACHINE),
+        RegKey::predef(HKEY_CURRENT_USER),
+    ] {
+        if let Ok(key) = hive.open_subkey_with_flags(subkey, KEY_READ) {
+            for v in key.enum_values().flatten() {
+                let full = v.0;
+                let name = full
+                    .trim_end_matches(" (TrueType)")
+                    .trim_end_matches(" (OpenType)")
+                    .trim_end_matches(" (All res)")
+                    .trim_end_matches(" (VGA res)")
+                    .trim_end_matches(" (FIXED res)")
+                    .to_string();
+                if !name.is_empty() && !names.contains(&name) {
+                    names.push(name);
+                }
+            }
+        }
+    }
+    names.sort_by_key(|s| s.to_lowercase());
+    Ok(names)
+}
+
+#[cfg(windows)]
+#[tauri::command]
+pub async fn list_fonts() -> Result<Vec<String>, String> {
+    list_fonts_inner()
+}
+
+#[cfg(not(windows))]
+pub fn list_fonts_inner() -> Result<Vec<String>, String> {
+    Ok(vec!["系统默认".to_string()])
+}
+
+#[cfg(not(windows))]
+#[tauri::command]
+pub async fn list_fonts() -> Result<Vec<String>, String> {
+    list_fonts_inner()
+}
+
 // 供测试复用：内部状态清理
 #[allow(dead_code)]
 pub fn _reset_config() {

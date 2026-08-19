@@ -26,6 +26,11 @@ export const store = reactive({
   mode: 'split', // edit | preview | split
   jsonOpen: false,
 
+  fonts: [],
+  fontFamily: '', // '' = 默认
+  fontSize: 15,
+  wrapTxt: false,
+
   saveState: 'saved', // saved | saving
   toastMsg: '',
   toastTimer: null,
@@ -52,6 +57,52 @@ export function toggleTheme() {
   applyTheme(store.theme === 'light' ? 'dark' : 'light');
 }
 
+/* ── 编辑器字体 / 换行 ─────────────────────────── */
+export function applyFont() {
+  const root = document.documentElement;
+  root.style.setProperty('--editor-font', store.fontFamily || 'var(--font-body)');
+  root.style.setProperty('--editor-font-size', `${store.fontSize}px`);
+  try {
+    localStorage.setItem('notepad-font', store.fontFamily);
+    localStorage.setItem('notepad-fontsize', String(store.fontSize));
+  } catch { /* ignore */ }
+}
+
+export function setFontFamily(family) {
+  store.fontFamily = family;
+  applyFont();
+}
+
+export function setFontSize(size) {
+  store.fontSize = size;
+  applyFont();
+}
+
+export function setWrapTxt(on) {
+  store.wrapTxt = on;
+  try {
+    localStorage.setItem('notepad-wraptxt', on ? '1' : '0');
+  } catch { /* ignore */ }
+}
+
+export async function loadFonts() {
+  try {
+    store.fonts = await api.listFonts();
+  } catch {
+    store.fonts = [];
+  }
+}
+
+function initFontPrefs() {
+  try {
+    store.fontFamily = localStorage.getItem('notepad-font') || '';
+    const size = Number(localStorage.getItem('notepad-fontsize'));
+    if (size >= 10 && size <= 32) store.fontSize = size;
+    store.wrapTxt = localStorage.getItem('notepad-wraptxt') === '1';
+  } catch { /* ignore */ }
+  applyFont();
+}
+
 /* ── 提示 ─────────────────────────────────────────────── */
 export function toast(msg) {
   store.toastMsg = msg;
@@ -64,6 +115,8 @@ export function toast(msg) {
 /* ── 初始化 / 引导 ─────────────────────────────────────── */
 export async function init() {
   initTheme();
+  initFontPrefs();
+  loadFonts();
   try {
     const cfg = await api.getConfig();
     if (cfg && cfg.data_dir) {
