@@ -234,10 +234,10 @@ pub async fn list_trash() -> Result<Vec<TrashEntryView>, String> {
     // 补充磁盘上存在但无记录的（例如手工移入）
     let trash_dir = root.join(".trash");
     if let Ok(entries) = std::fs::read_dir(&trash_dir) {
-        let known: Vec<&str> = out.iter().map(|t| t.name.as_str()).collect();
+        let known: Vec<String> = out.iter().map(|t| t.name.clone()).collect();
         for e in entries.flatten() {
             let name = e.file_name().to_string_lossy().to_string();
-            if name.ends_with(".md") && !known.contains(&name.as_str()) {
+            if name.ends_with(".md") && !known.contains(&name) {
                 out.push(TrashEntryView {
                     name,
                     original: String::new(),
@@ -253,7 +253,6 @@ pub async fn list_trash() -> Result<Vec<TrashEntryView>, String> {
 #[tauri::command]
 pub async fn restore_note(name: String) -> Result<(), String> {
     let root = data_dir()?;
-    let trash_dir = root.join(".trash");
     let src = resolve(&root, &format!(".trash/{name}"))?;
     if !src.is_file() {
         return Err(format!("回收站中不存在: {name}"));

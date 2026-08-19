@@ -25,7 +25,7 @@ pub struct TrashEntry {
     pub deleted_at: u64,
 }
 
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize, Default, Clone)]
 pub struct MetaFile {
     #[serde(default)]
     pub version: u32,

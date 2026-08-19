@@ -32,7 +32,25 @@ pub fn search_dir(root: &Path, q: &str) -> Vec<SearchHit> {
     hits
 }
 
-/// 生成命中摘要：定位首个命中，截取上下文窗口。
+/// 回退到最近的字符边界（向下取整）
+fn floor_boundary(t: &str, mut idx: usize) -> usize {
+    idx = idx.min(t.len());
+    while idx > 0 && !t.is_char_boundary(idx) {
+        idx -= 1;
+    }
+    idx
+}
+
+/// 向上取整到最近的字符边界
+fn ceil_boundary(t: &str, mut idx: usize) -> usize {
+    idx = idx.min(t.len());
+    while idx < t.len() && !t.is_char_boundary(idx) {
+        idx += 1;
+    }
+    idx
+}
+
+/// 生成命中摘要：定位首个命中，截取上下文窗口（字符边界安全）。
 pub fn make_snippet(text: &str, q: &str, window: usize) -> String {
     let t = text.trim();
     if q.is_empty() {
@@ -43,12 +61,11 @@ pub fn make_snippet(text: &str, q: &str, window: usize) -> String {
     let ql = q.to_lowercase();
     match lower.find(&ql) {
         Some(idx) => {
-            let start = idx.saturating_sub(window);
-            let end = (idx + ql.len() + window).min(t.len());
+            let start = floor_boundary(t, idx.saturating_sub(window));
+            let end = ceil_boundary(t, (idx + ql.len() + window).min(t.len()));
             let prefix = if start > 0 { "…" } else { "" };
             let suffix = if end < t.len() { "…" } else { "" };
-            let mid: String = t[start..end].to_string();
-            format!("{prefix}{mid}{suffix}")
+            format!("{prefix}{}{suffix}", &t[start..end])
         }
         None => {
             let cut: String = t.chars().take(window * 2).collect();

@@ -38,8 +38,8 @@ fn search_no_match_returns_empty() {
 
 #[test]
 fn make_snippet_centers_on_hit() {
-    let text = "前缀内容 ".repeat(20) + "目标词" + " 后缀内容 ".repeat(20);
-    let s = make_snippet(text, "目标词", 20);
+    let text = format!("{}目标词{}", "前缀内容 ".repeat(20), " 后缀内容 ".repeat(20));
+    let s = make_snippet(&text, "目标词", 20);
     assert!(s.contains("目标词"));
     assert!(s.len() < text.len());
     assert!(s.starts_with('…'));

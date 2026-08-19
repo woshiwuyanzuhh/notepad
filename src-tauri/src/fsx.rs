@@ -54,31 +54,54 @@ pub fn scan_markdown(root: &Path) -> Vec<PathBuf> {
     out
 }
 
-/// 提取首行非空正文作为摘要：去 Markdown 语法标记，超长截断。
+/// 提取首行非空正文作为摘要：跳过标题/代码块/空行，超长截断。
+/// 若全文只有标题，回退取第一个标题。
 pub fn excerpt_of(content: &str, max: usize) -> String {
     let mut seen = String::new();
+    let mut fallback = String::new();
     for line in content.lines() {
-        let t = line
+        let raw = line.trim();
+        if raw.is_empty() {
+            continue;
+        }
+        if raw.starts_with("```") {
+            continue;
+        }
+        if raw.starts_with('#') {
+            let heading = raw.trim_start_matches('#').trim();
+            if fallback.is_empty() && !heading.is_empty() {
+                fallback = heading.to_string();
+            }
+            continue;
+        }
+        let t = raw
+            .trim_start_matches('>')
+            .trim_start_matches(['-', '*', '+'])
+            .trim_start_matches(|c: char| c.is_ascii_digit() || c == '.')
             .trim()
-            .trim_start_matches(|c| c == '#' || c == ' ' || c == '>' || c == '-' || c == '*' || c == '`')
+            .trim_matches('`')
             .trim();
-        if !t.is_empty() && !t.starts_with("```") {
+        if !t.is_empty() {
             seen.push_str(t);
             seen.push(' ');
         }
-        if seen.trim().len() >= max {
+        if seen.trim().chars().count() >= max {
             break;
         }
     }
-    let trimmed = seen.trim();
-    if trimmed.is_empty() {
+    let base = if seen.trim().is_empty() {
+        fallback
+    } else {
+        seen.trim().to_string()
+    };
+    if base.is_empty() {
         return "暂无内容".to_string();
     }
-    if trimmed.chars().count() > max {
-        let cut: String = trimmed.chars().take(max).collect();
+    if base.chars().count() > max {
+        let cut: String = base.chars().take(max).collect();
         return format!("{}…", cut.trim_end());
     }
-    trimmed.to_string()
+    base
 }
 
 /// root 下路径转相对字符串（正斜杠）。
