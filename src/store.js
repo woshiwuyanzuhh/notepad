@@ -2,7 +2,7 @@
 
 import { reactive } from 'vue';
 import { api } from './lib/api.js';
-import { normalizeNotes, normalizeNote } from './lib/notes.js';
+import { normalizeNotes } from './lib/notes.js';
 import { debounce } from './lib/utils.js';
 
 export const store = reactive({
@@ -15,11 +15,14 @@ export const store = reactive({
   trash: [],
   searchHits: [],
 
-  tabs: [], // { path, title, content, dirty, loaded }
+  tabs: [], // { path, title, content, dirty, loaded, mtime }
   active: null,
 
-  filter: { kind: 'all', value: null }, // all | folder | tag | trash | search
-  q: '',
+  // 视图：all | starred | recent | folder | tag | trash
+  view: { type: 'all', key: null },
+  query: '',
+  sortBy: 'modified', // modified | title | words
+  listView: 'list', // list | grid
 
   theme: 'light',
   rail: false,
@@ -28,70 +31,55 @@ export const store = reactive({
   jsonOpen: false,
 
   fonts: [],
-  fontFamily: '', // '' = 默认
+  fontFamily: '',
   fontSize: 15,
   wrapTxt: false,
 
-  saveState: 'saved', // saved | saving
+  saveState: 'saved',
   toastMsg: '',
   toastTimer: null,
 
-  // 右键菜单状态
-  ctxMenu: { visible: false, x: 0, y: 0, path: null },
+  // 侧栏标签编辑状态
+  tagAddOpen: false,
+  tagEditName: null,
+  tagDelName: null,
+  foldersOpen: new Set(['工作']),
+
+  // 右键菜单
+  ctxMenu: { visible: false, x: 0, y: 0, path: null, panel: null }, // panel: null | 'rename' | 'tags'
+
+  // UI 浮层
+  settingsOpen: false,
+  welcomeOpen: false,
+  newMenuOpen: false,
+  sortMenuOpen: false,
 });
-
-/* ── 右键菜单 ─────────────────────────────────────────── */
-export function openCtxMenu(e, path) {
-  store.ctxMenu.visible = true;
-  store.ctxMenu.path = path;
-  const menuW = 220;
-  const menuH = 300;
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  store.ctxMenu.x = Math.min(e.clientX, vw - menuW - 8);
-  store.ctxMenu.y = Math.min(e.clientY, vh - menuH - 8);
-}
-
-export function closeCtxMenu() {
-  store.ctxMenu.visible = false;
-  store.ctxMenu.path = null;
-}
-
-/** 设置卡片颜色（'' = 清除） */
-export async function setNoteColor(path, color) {
-  const meta = store.notes.find((n) => n.path === path);
-  if (!meta) return;
-  await api.setNoteMeta(path, { color });
-  meta.color = color || null;
-}
-
-/** 切换果冻动画 */
-export async function setNoteJelly(path, on) {
-  const meta = store.notes.find((n) => n.path === path);
-  if (!meta) return;
-  await api.setNoteMeta(path, { jelly: on });
-  meta.jelly = on;
-}
 
 /* ── 主题 ─────────────────────────────────────────────── */
 export function applyTheme(theme) {
   store.theme = theme;
   document.documentElement.dataset.theme = theme;
-  try {
-    localStorage.setItem('notepad-theme', theme);
-  } catch { /* ignore */ }
+  try { localStorage.setItem('notepad-theme', theme); } catch { /* ignore */ }
 }
-
 export function initTheme() {
   let saved = 'light';
-  try {
-    saved = localStorage.getItem('notepad-theme') || 'light';
-  } catch { /* ignore */ }
+  try { saved = localStorage.getItem('notepad-theme') || 'light'; } catch { /* ignore */ }
   applyTheme(saved);
 }
+export function toggleTheme() { applyTheme(store.theme === 'light' ? 'dark' : 'light'); }
 
-export function toggleTheme() {
-  applyTheme(store.theme === 'light' ? 'dark' : 'light');
+/* ── 视图 / 排序 ──────────────────────────────────────── */
+export function setView(type, key = null) {
+  store.view = { type, key };
+  store.query = '';
+}
+export function setListView(v) {
+  store.listView = v;
+  try { localStorage.setItem('notepad-listview', v); } catch { /* ignore */ }
+}
+export function setSortBy(s) {
+  store.sortBy = s;
+  try { localStorage.setItem('notepad-sort', s); } catch { /* ignore */ }
 }
 
 /* ── 编辑器字体 / 换行 ─────────────────────────── */
@@ -104,38 +92,23 @@ export function applyFont() {
     localStorage.setItem('notepad-fontsize', String(store.fontSize));
   } catch { /* ignore */ }
 }
-
-export function setFontFamily(family) {
-  store.fontFamily = family;
-  applyFont();
-}
-
-export function setFontSize(size) {
-  store.fontSize = size;
-  applyFont();
-}
-
+export function setFontFamily(family) { store.fontFamily = family; applyFont(); }
+export function setFontSize(size) { store.fontSize = size; applyFont(); }
 export function setWrapTxt(on) {
   store.wrapTxt = on;
-  try {
-    localStorage.setItem('notepad-wraptxt', on ? '1' : '0');
-  } catch { /* ignore */ }
+  try { localStorage.setItem('notepad-wraptxt', on ? '1' : '0'); } catch { /* ignore */ }
 }
-
 export async function loadFonts() {
-  try {
-    store.fonts = await api.listFonts();
-  } catch {
-    store.fonts = [];
-  }
+  try { store.fonts = await api.listFonts(); } catch { store.fonts = []; }
 }
-
-function initFontPrefs() {
+function initPrefs() {
   try {
     store.fontFamily = localStorage.getItem('notepad-font') || '';
     const size = Number(localStorage.getItem('notepad-fontsize'));
     if (size >= 10 && size <= 32) store.fontSize = size;
     store.wrapTxt = localStorage.getItem('notepad-wraptxt') === '1';
+    store.listView = localStorage.getItem('notepad-listview') || 'list';
+    store.sortBy = localStorage.getItem('notepad-sort') || 'modified';
   } catch { /* ignore */ }
   applyFont();
 }
@@ -144,15 +117,13 @@ function initFontPrefs() {
 export function toast(msg) {
   store.toastMsg = msg;
   clearTimeout(store.toastTimer);
-  store.toastTimer = setTimeout(() => {
-    store.toastMsg = '';
-  }, 1800);
+  store.toastTimer = setTimeout(() => { store.toastMsg = ''; }, 1800);
 }
 
 /* ── 初始化 / 引导 ─────────────────────────────────────── */
 export async function init() {
   initTheme();
-  initFontPrefs();
+  initPrefs();
   loadFonts();
   try {
     const cfg = await api.getConfig();
@@ -182,25 +153,20 @@ export async function completeOnboarding(dir) {
   }
 }
 
-/** 切换工作目录 */
 export async function switchDataDir(dir) {
   if (dir === store.dataDir) return;
   await api.setDataDir(dir);
   store.dataDir = dir;
   if (!store.dataDirs.includes(dir)) store.dataDirs.push(dir);
   closeAllTabs();
-  store.q = '';
-  store.filter = { kind: 'all', value: null };
+  store.query = '';
+  store.view = { type: 'all', key: null };
   await refreshNotes();
-  toast('已切换到：' + dir);
+  toast('已切换到：' + shortName(dir));
 }
 
-/** 从列表移除工作目录（当前目录被移除时后端自动切换） */
 export async function removeDataDir(dir) {
-  if (store.dataDirs.length <= 1) {
-    toast('至少保留一个工作目录');
-    return;
-  }
+  if (store.dataDirs.length <= 1) { toast('至少保留一个工作目录'); return; }
   const wasActive = dir === store.dataDir;
   await api.removeDataDir(dir);
   store.dataDirs = store.dataDirs.filter((d) => d !== dir);
@@ -227,7 +193,6 @@ export async function refreshNotes() {
   store.notes = normalizeNotes(list);
   await refreshTrash();
 }
-
 export async function refreshTrash() {
   store.trash = await api.listTrash();
 }
@@ -235,23 +200,20 @@ export async function refreshTrash() {
 /* ── 标签页 ───────────────────────────────────────────── */
 export async function openNote(path) {
   const existing = store.tabs.find((t) => t.path === path);
-  if (existing) {
-    store.active = path;
-    return;
-  }
+  if (existing) { store.active = path; return; }
   const { content, mtime } = await api.readNote(path);
   const meta = store.notes.find((n) => n.path === path);
   store.tabs.push({
     path,
-    title: meta ? meta.title : path.split('/').pop().replace(/\.md$/, ''),
+    title: meta ? meta.title : path.split('/').pop().replace(/\.(md|txt)$/i, ''),
     content,
     mtime,
     dirty: false,
     loaded: true,
   });
   store.active = path;
-  store.filter = { kind: 'all', value: null };
-  store.q = '';
+  store.view = { type: 'all', key: null };
+  store.query = '';
 }
 
 export async function createNote(folder, title, format = 'md') {
@@ -259,6 +221,19 @@ export async function createNote(folder, title, format = 'md') {
   await refreshNotes();
   await openNote(path);
   return path;
+}
+
+export async function renameNote(path, newName) {
+  const newPath = await api.renameNote(path, newName);
+  // 更新标签页
+  const tab = store.tabs.find((t) => t.path === path);
+  if (tab) {
+    tab.path = newPath;
+    tab.title = newName.replace(/\.(md|txt)$/i, '');
+  }
+  if (store.active === path) store.active = newPath;
+  await refreshNotes();
+  return newPath;
 }
 
 export function closeTab(path) {
@@ -271,9 +246,7 @@ export function closeTab(path) {
   }
 }
 
-const saveDebounced = debounce((path) => {
-  doSave(path);
-}, 900);
+const saveDebounced = debounce((path) => { doSave(path); }, 900);
 
 export function markDirty(path) {
   const tab = store.tabs.find((t) => t.path === path);
@@ -297,10 +270,7 @@ export async function doSave(path) {
     if (msg.startsWith('CONFLICT:')) {
       const { ask } = await import('@tauri-apps/plugin-dialog');
       const overwrite = await ask('文件已被外部修改，是否用当前内容覆盖？', {
-        title: '文件冲突',
-        kind: 'warning',
-        okLabel: '覆盖',
-        cancelLabel: '重新加载',
+        title: '文件冲突', kind: 'warning', okLabel: '覆盖', cancelLabel: '重新加载',
       });
       if (overwrite) {
         const savedMtime = await api.writeNote(path, tab.content, null);
@@ -331,50 +301,93 @@ function updateExcerpt(tab) {
     .split(/\r?\n/)
     .map((l) => l.replace(/^#{1,6}\s+/, '').trim())
     .find((l) => l && !l.startsWith('```'));
-  meta.excerpt = first || '暂无内容';
+  meta.excerpt = first || '空白笔记';
+  meta.word_count = countWords(tab.content);
+}
+
+function countWords(text) {
+  const han = (text.match(/[\u4e00-\u9fff\u3400-\u4dbf]/g) || []).length;
+  const latin = (text.match(/[A-Za-z0-9_]+(?:['-][A-Za-z0-9_]+)*/g) || []).length;
+  return han + latin;
 }
 
 /* ── 元数据操作 ───────────────────────────────────────── */
 export async function toggleStar(path) {
   const meta = store.notes.find((n) => n.path === path);
   if (!meta) return;
-  const next = !meta.star;
-  await api.setNoteMeta(path, { star: next });
-  meta.star = next;
+  meta.star = !meta.star;
+  await api.setNoteMeta(path, { star: meta.star });
 }
-
 export async function togglePin(path) {
   const meta = store.notes.find((n) => n.path === path);
   if (!meta) return;
-  const next = !meta.pin;
-  await api.setNoteMeta(path, { pin: next });
-  meta.pin = next;
+  meta.pin = !meta.pin;
+  await api.setNoteMeta(path, { pin: meta.pin });
   await refreshNotes();
 }
-
+export async function setNoteColor(path, color) {
+  const meta = store.notes.find((n) => n.path === path);
+  if (!meta) return;
+  await api.setNoteMeta(path, { color });
+  meta.color = color || null;
+}
+export async function setNoteJelly(path, on) {
+  const meta = store.notes.find((n) => n.path === path);
+  if (!meta) return;
+  await api.setNoteMeta(path, { jelly: on });
+  meta.jelly = on;
+}
+export async function setNoteTags(path, tags) {
+  const meta = store.notes.find((n) => n.path === path);
+  if (!meta) return;
+  await api.setNoteMeta(path, { tags });
+  meta.tags = tags.slice();
+}
 export async function moveToTrash(path) {
   const tab = store.tabs.find((t) => t.path === path);
-  if (tab && tab.dirty) {
-    await doSave(path);
-  }
+  if (tab && tab.dirty) await doSave(path);
   await api.deleteNote(path);
   closeTab(path);
   await refreshNotes();
 }
+export async function restoreNote(name) { await api.restoreNote(name); await refreshNotes(); }
+export async function purgeNote(name) { await api.purgeNote(name); await refreshNotes(); }
 
-export async function restoreNote(name) {
-  await api.restoreNote(name);
-  await refreshNotes();
+/* ── 标签管理 ─────────────────────────────────────────── */
+export function tagList() {
+  const map = new Map();
+  for (const n of store.notes) {
+    for (const t of n.tags) map.set(t, (map.get(t) || 0) + 1);
+  }
+  return [...map.entries()].map(([name, count]) => ({ name, count }));
 }
-
-export async function purgeNote(name) {
-  await api.purgeNote(name);
+export async function addTag(name) {
+  const t = String(name || '').trim();
+  if (!t) return;
+  if (tagList().some((x) => x.name === t)) { toast('标签已存在'); return; }
+  const active = activeTab();
+  if (!active) { toast('请先打开一篇笔记'); return; }
+  const meta = store.notes.find((n) => n.path === active.path);
+  const tags = meta ? [...meta.tags, t] : [t];
+  await setNoteTags(active.path, tags);
+  toast(`已创建标签「${t}」`);
+}
+export async function renameTag(oldName, newName) {
+  const t = String(newName || '').trim();
+  if (!t || t === oldName) return;
+  await api.renameTag(oldName, t);
   await refreshNotes();
+  toast(`标签「${oldName}」→「${t}」`);
+}
+export async function deleteTag(name) {
+  await api.deleteTag(name);
+  await refreshNotes();
+  toast(`已删除标签「${name}」`);
 }
 
 /* ── 搜索 ─────────────────────────────────────────────── */
 export async function searchNotes(q) {
-  store.q = q;
+  store.query = q;
   if (q.trim()) {
     store.searchHits = await api.search(q);
   } else {
@@ -382,58 +395,93 @@ export async function searchNotes(q) {
   }
 }
 
-/* ── 派生数据 ─────────────────────────────────────────── */
-export function folderTree() {
-  const tree = {};
-  for (const n of store.notes) {
-    if (!n.folder) continue;
-    const parts = n.folder.split('/');
-    let node = tree;
-    let path = '';
-    for (const p of parts) {
-      path = path ? `${path}/${p}` : p;
-      node[path] = node[path] || { count: 0, children: {} };
-      node = node[path].children;
-    }
-  }
-  const counts = {};
-  for (const n of store.notes) {
-    if (!n.folder) continue;
-    counts[n.folder] = (counts[n.folder] || 0) + 1;
-  }
-  return { tree, counts };
+/* ── 右键菜单 ─────────────────────────────────────────── */
+export function openCtxMenu(e, path) {
+  store.ctxMenu.visible = true;
+  store.ctxMenu.path = path;
+  store.ctxMenu.panel = null;
+  const menuW = 230;
+  const menuH = 380;
+  store.ctxMenu.x = Math.min(e.clientX, window.innerWidth - menuW - 8);
+  store.ctxMenu.y = Math.min(e.clientY, window.innerHeight - menuH - 8);
+}
+export function closeCtxMenu() {
+  store.ctxMenu.visible = false;
+  store.ctxMenu.path = null;
+  store.ctxMenu.panel = null;
 }
 
-export function tagList() {
-  const map = new Map();
+/* ── 派生数据 ─────────────────────────────────────────── */
+export function shortName(dir) {
+  const s = String(dir || '').replace(/\\/g, '/').replace(/\/+$/, '');
+  return s.split('/').pop() || s;
+}
+
+export function folderTree() {
+  // 返回：顶层文件夹数组 [{name, path, count, files:[NoteMeta]}]
+  const dirs = new Map();
+  const filesByDir = new Map();
   for (const n of store.notes) {
-    for (const t of n.tags) {
-      map.set(t, (map.get(t) || 0) + 1);
+    if (!n.folder) {
+      if (!filesByDir.has('')) filesByDir.set('', []);
+      filesByDir.get('').push(n);
+      continue;
     }
+    const parts = n.folder.split('/');
+    let acc = '';
+    for (const p of parts) {
+      acc = acc ? `${acc}/${p}` : p;
+      if (!dirs.has(acc)) dirs.set(acc, { name: p, path: acc, count: 0 });
+    }
+    if (!filesByDir.has(n.folder)) filesByDir.set(n.folder, []);
+    filesByDir.get(n.folder).push(n);
   }
-  return [...map.entries()].map(([name, count]) => ({ name, count }));
+  // count 为该目录直接文件数 + 子目录数（简化：直接文件数）
+  for (const [dir, files] of filesByDir) {
+    if (dirs.has(dir)) dirs.get(dir).count = files.length;
+  }
+  return { dirs: [...dirs.values()], filesByDir };
 }
 
 export function visibleNotes() {
-  if (store.q.trim()) {
-    const q = store.q.trim().toLowerCase();
-    return store.notes.filter(
+  let list = store.notes;
+  if (store.query.trim()) {
+    const q = store.query.trim().toLowerCase();
+    list = list.filter(
       (n) =>
         n.title.toLowerCase().includes(q) ||
         n.excerpt.toLowerCase().includes(q) ||
         n.tags.join(' ').toLowerCase().includes(q),
     );
+  } else {
+    const v = store.view;
+    if (v.type === 'starred') list = list.filter((n) => n.star);
+    else if (v.type === 'recent') list = [...list].sort((a, b) => b.mtime - a.mtime).slice(0, 30);
+    else if (v.type === 'folder') list = list.filter((n) => n.folder === v.key || n.folder.startsWith(v.key + '/'));
+    else if (v.type === 'tag') list = list.filter((n) => n.tags.includes(v.key));
+    else if (v.type === 'trash') return [];
   }
-  const f = store.filter;
-  if (f.kind === 'folder') {
-    return store.notes.filter((n) => n.folder === f.value || n.folder.startsWith(f.value + '/'));
-  }
-  if (f.kind === 'tag') {
-    return store.notes.filter((n) => n.tags.includes(f.value));
-  }
-  return store.notes;
+  const s = store.sortBy;
+  return [...list].sort((a, b) => {
+    if (a.pin !== b.pin) return b.pin - a.pin;
+    if (s === 'title') return a.title.localeCompare(b.title, 'zh');
+    if (s === 'words') return b.word_count - a.word_count;
+    return b.mtime - a.mtime;
+  });
 }
 
 export function activeTab() {
   return store.tabs.find((t) => t.path === store.active) || null;
+}
+
+export function viewTitle() {
+  if (store.query.trim()) return '搜索结果';
+  switch (store.view.type) {
+    case 'starred': return '收藏';
+    case 'recent': return '最近编辑';
+    case 'folder': return (store.view.key || '').split('/').pop();
+    case 'tag': return `#${store.view.key}`;
+    case 'trash': return '回收站';
+    default: return '全部笔记';
+  }
 }

@@ -13,6 +13,7 @@ export const api = {
     invoke('write_note', { path, content, expectedMtime }),
   createNote: (folder, title, format = 'md') =>
     invoke('create_note', { folder, title, format }),
+  renameNote: (path, newName) => invoke('rename_note', { path, newName }),
   setNoteMeta: (path, meta) =>
     invoke('set_note_meta', {
       path,
@@ -23,6 +24,8 @@ export const api = {
       color: meta.color ?? null,
       jelly: meta.jelly ?? null,
     }),
+  renameTag: (oldName, newName) => invoke('rename_tag', { old: oldName, new: newName }),
+  deleteTag: (tag) => invoke('delete_tag', { tag }),
 
   deleteNote: (path) => invoke('delete_note', { path }),
   listTrash: () => invoke('list_trash'),

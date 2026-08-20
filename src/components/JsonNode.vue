@@ -1,14 +1,8 @@
 <template>
   <span class="jt-node">
     <span v-if="isContainer" class="jt-row">
-      <button
-        type="button"
-        class="jt-caret"
-        :class="{ closed: !isOpen }"
-        :aria-label="isOpen ? '收起' : '展开'"
-        @click="emit('toggle', path)"
-      >
-        <Icon name="chevron" />
+      <button type="button" class="jt-caret" :class="{ closed: !isOpen }" @click="emit('toggle', path)">
+        <Icon name="chev-r" />
       </button>
       <span class="jt-bracket">{{ isArray ? '[' : '{' }}</span>
       <span class="jt-hint">{{ isArray ? `${keys.length} 项` : `${keys.length} 个键` }}</span>
@@ -55,9 +49,7 @@ const isContainer = computed(() => props.node !== null && typeof props.node === 
 const isArray = computed(() => Array.isArray(props.node));
 const keys = computed(() => {
   if (!isContainer.value) return [];
-  return isArray.value
-    ? props.node.map((_, i) => String(i))
-    : Object.keys(props.node);
+  return isArray.value ? props.node.map((_, i) => String(i)) : Object.keys(props.node);
 });
 const isOpen = computed(() => props.openSet.has(props.path));
 </script>

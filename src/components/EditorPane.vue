@@ -173,6 +173,21 @@ function insertText(text) {
 function format(kind, custom) {
   const v = aliveView();
   if (!v) return;
+  // 代码块围栏：整行包裹 ```lang
+  if (kind === 'codeblock') {
+    const { from } = v.state.selection.main;
+    const line = v.state.doc.lineAt(from);
+    const indent = line.text.match(/^\s*/)?.[0] || '';
+    v.dispatch({
+      changes: {
+        from: line.from,
+        insert: `${indent}\`\`\`\n${line.text.trim() || '代码'}\n${indent}\`\`\`\n`,
+        to: line.to,
+      },
+      selection: { anchor: line.from + indent.length + 4 },
+    });
+    return;
+  }
   const wrap = WRAP[kind];
   if (wrap) {
     const { from, to } = v.state.selection.main;

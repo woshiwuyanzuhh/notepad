@@ -76,8 +76,22 @@ pub struct NoteMeta {
     pub mtime: u64,
     pub size: u64,
     pub excerpt: String,
+    pub word_count: u64,
     pub color: Option<String>,
     pub jelly: Option<bool>,
+}
+
+/// 字数：中文字符数 + 英文单词数（与前端一致）
+fn count_words(content: &str) -> u64 {
+    let han = content.chars().filter(|c| {
+        let cp = *c as u32;
+        (0x4E00..=0x9FFF).contains(&cp) || (0x3400..=0x4DBF).contains(&cp)
+    }).count() as u64;
+    let latin = content
+        .split(|c: char| !c.is_ascii_alphanumeric() && c != '_' && c != '-')
+        .filter(|w| !w.is_empty())
+        .count() as u64;
+    han + latin
 }
 
 #[derive(Serialize)]
@@ -133,11 +147,11 @@ pub async fn list_notes() -> Result<Vec<NoteMeta>, String> {
         let rel = relative_path(&root, &file);
         let md = std::fs::metadata(&file).map_err(|e| e.to_string())?;
         let entry = meta.notes.get(&rel);
-        let excerpt = std::fs::read(&file)
+        let content = std::fs::read(&file)
             .ok()
-            .map(|b| String::from_utf8_lossy(&b[..b.len().min(8192)]).to_string())
-            .map(|s| excerpt_of(&s, 80))
+            .map(|b| String::from_utf8_lossy(&b[..b.len().min(16384)]).to_string())
             .unwrap_or_default();
+        let excerpt = excerpt_of(&content, 80);
         out.push(NoteMeta {
             title: file
                 .file_stem()
@@ -156,6 +170,7 @@ pub async fn list_notes() -> Result<Vec<NoteMeta>, String> {
             mtime: mtime_ms(&file),
             size: md.len(),
             excerpt,
+            word_count: count_words(&content),
         });
     }
     out.sort_by(|a, b| b.pin.cmp(&a.pin).then(b.mtime.cmp(&a.mtime)));
@@ -356,6 +371,96 @@ pub async fn purge_note(name: String) -> Result<(), String> {
 pub async fn search(q: String) -> Result<Vec<SearchHit>, String> {
     let root = data_dir()?;
     Ok(search_dir(&root, &q))
+}
+
+/// 内部纯函数：重命名笔记（保留扩展名与文件夹，meta 键同步迁移）。
+pub fn rename_note_inner(root: &Path, rel: &str, new_name: &str) -> Result<String, String> {
+    let file = resolve(root, rel)?;
+    if !file.is_file() {
+        return Err(format!("笔记不存在: {rel}"));
+    }
+    let ext = file
+        .extension()
+        .map(|e| e.to_string_lossy().to_string())
+        .unwrap_or_else(|| "md".into());
+    let stem = sanitize_name(new_name);
+    let dir = file
+        .parent()
+        .ok_or_else(|| "无效路径".to_string())?
+        .to_path_buf();
+    let target = unique_path(&dir, &stem, &format!(".{ext}"));
+    std::fs::rename(&file, &target).map_err(|e| e.to_string())?;
+    let new_rel = relative_path(root, &target);
+    let mut meta = load_meta(root);
+    if let Some(entry) = meta.notes.remove(rel) {
+        meta.notes.insert(new_rel.clone(), entry);
+    }
+    save_meta(root, &meta)?;
+    Ok(new_rel)
+}
+
+#[tauri::command]
+pub async fn rename_note(path: String, new_name: String) -> Result<String, String> {
+    let root = data_dir()?;
+    rename_note_inner(&root, &path, &new_name)
+}
+
+/// 内部纯函数：重命名标签（更新所有笔记中的该标签）。
+pub fn rename_tag_inner(root: &Path, old: &str, new: &str) -> Result<(), String> {
+    let new = new.trim();
+    if new.is_empty() || new == old {
+        return Ok(());
+    }
+    let mut meta = load_meta(root);
+    let mut changed = false;
+    for entry in meta.notes.values_mut() {
+        if let Some(tags) = entry.tags.as_mut() {
+            for t in tags.iter_mut() {
+                if t == old {
+                    *t = new.to_string();
+                    changed = true;
+                }
+            }
+        }
+    }
+    if changed {
+        save_meta(root, &meta)?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn rename_tag(old: String, new: String) -> Result<(), String> {
+    let root = data_dir()?;
+    rename_tag_inner(&root, &old, &new)
+}
+
+/// 内部纯函数：删除标签（从所有笔记移除）。
+pub fn delete_tag_inner(root: &Path, tag: &str) -> Result<(), String> {
+    let mut meta = load_meta(root);
+    let mut changed = false;
+    for entry in meta.notes.values_mut() {
+        if let Some(tags) = entry.tags.as_mut() {
+            let before = tags.len();
+            tags.retain(|t| t != tag);
+            if tags.len() != before {
+                changed = true;
+            }
+            if tags.is_empty() {
+                entry.tags = None;
+            }
+        }
+    }
+    if changed {
+        save_meta(root, &meta)?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn delete_tag(tag: String) -> Result<(), String> {
+    let root = data_dir()?;
+    delete_tag_inner(&root, &tag)
 }
 
 /// 内部纯函数：导入图片到数据目录 assets/，返回相对路径（如 assets/xx.png）。

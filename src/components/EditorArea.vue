@@ -1,86 +1,172 @@
 <template>
-  <section id="editor">
-    <template v-if="tab">
-      <TabBar @new="onNewNote" />
-
-      <EditorToolbar @format="onFormat" />
-
-      <JsonBar ref="jsonBar" @format-json="onFormatJson" />
-
-      <div class="content" :class="store.mode">
-        <div v-if="store.mode !== 'preview'" class="edit-pane">
-          <EditorPane
-            ref="editorPane"
-            :content="tab.content"
-            :is-markdown="!tab.path.toLowerCase().endsWith('.txt')"
-            @update:content="onContent"
-          />
-        </div>
-        <div v-if="store.mode !== 'edit'" class="preview-pane">
-          <PreviewPane :content="tab.content" />
+  <section id="editorpane">
+    <!-- 标签栏 -->
+    <div id="tabbar">
+      <div id="tab-scroll">
+        <div
+          v-for="t in store.tabs"
+          :key="t.path"
+          class="tab"
+          :class="{ on: store.active === t.path }"
+          @click="store.active = t.path"
+          @auxclick.middle="closeTab(t.path)"
+        >
+          <span v-if="t.dirty" class="tab-dot"></span>
+          <span class="tab-title">{{ t.title }}</span>
+          <button class="tab-x" @click.stop="closeTab(t.path)"><Icon name="x" /></button>
         </div>
       </div>
-    </template>
+      <button class="tab-new tip" data-tip="新建笔记" aria-label="新建笔记" @click="onNewNote">
+        <Icon name="plus" />
+      </button>
+    </div>
 
-    <EmptyState v-else @create="onNewNote" />
+    <!-- 工具条 -->
+    <div v-if="tab" id="editor-toolbar">
+      <div id="fmt-group">
+        <button class="tool-btn tip" data-tip="标题 1" @click="fmt('h1')"><Icon name="h1" /></button>
+        <button class="tool-btn tip" data-tip="加粗" @click="fmt('bold')"><Icon name="bold" /></button>
+        <button class="tool-btn tip" data-tip="斜体" @click="fmt('italic')"><Icon name="italic" /></button>
+        <span class="tool-sep"></span>
+        <button class="tool-btn tip" data-tip="引用" @click="fmt('quote')"><Icon name="quote" /></button>
+        <button class="tool-btn tip" data-tip="代码块" @click="fmt('codeblock')"><Icon name="code" /></button>
+        <button class="tool-btn tip" data-tip="行内代码" @click="fmt('code')"><Icon name="mono" /></button>
+        <span class="tool-sep"></span>
+        <button class="tool-btn tip" data-tip="链接" @click="fmt('link')"><Icon name="link" /></button>
+        <button class="tool-btn tip" data-tip="插入图片" @click="insertImage"><Icon name="image" /></button>
+        <button class="tool-btn tip" data-tip="无序列表" @click="fmt('list')"><Icon name="list-ul" /></button>
+      </div>
+      <div v-if="isTxt" class="toolbar-hint" id="txt-hint">纯文本 · 无格式</div>
+      <span class="flex-spacer"></span>
+      <div class="seg" id="mode-toggle" role="tablist" aria-label="编辑模式">
+        <button class="seg-btn" :class="{ sel: store.mode === 'edit' }" @click="store.mode = 'edit'">
+          <Icon name="pen" />编辑
+        </button>
+        <button class="seg-btn" :class="{ sel: store.mode === 'split' }" @click="store.mode = 'split'">
+          <Icon name="split" />分栏
+        </button>
+        <button class="seg-btn" :class="{ sel: store.mode === 'preview' }" @click="store.mode = 'preview'">
+          <Icon name="eye" />预览
+        </button>
+      </div>
+    </div>
 
-    <JsonTree v-if="store.jsonOpen && jsonValue !== undefined" :json="jsonValue" />
+    <!-- JSON 工具条 -->
+    <div v-if="tab && jsonInfo" id="json-toolbar">
+      <span class="jt-label"><Icon name="braces" />JSON 工具</span>
+      <button class="json-tool" @click="jsonFormat">格式化</button>
+      <button class="json-tool" @click="jsonValidate">校验</button>
+      <button class="json-tool" :class="{ on: store.jsonOpen }" @click="store.jsonOpen = !store.jsonOpen">
+        树状查看
+      </button>
+      <span class="flex-spacer"></span>
+      <span class="jt-msg" :class="jsonMsg.cls">{{ jsonMsg.text }}</span>
+    </div>
 
-    <StatusBar />
+    <!-- 编辑区 -->
+    <div id="editor-body" :class="store.mode">
+      <div v-if="store.mode !== 'preview'" class="cm-wrap">
+        <EditorPane
+          ref="editorPane"
+          :content="tab ? tab.content : ''"
+          :is-markdown="!isTxt"
+          @update:content="onContent"
+        />
+      </div>
+      <div v-if="store.mode !== 'edit'" id="editor-preview" class="md center">
+        <PreviewPane :content="tab ? tab.content : ''" />
+      </div>
+    </div>
+
+    <!-- 编辑器空状态 -->
+    <div v-if="!tab" id="editor-empty">
+      <div class="ee-ic"><Icon name="pen" /></div>
+      <div class="ee-title">打开一篇笔记开始编辑</div>
+      <div class="ee-sub">从左侧列表选择，或创建新笔记</div>
+      <div class="ee-kbd">
+        <span><kbd>Ctrl</kbd> <kbd>N</kbd> 新建</span>
+        <span><kbd>Ctrl</kbd> <kbd>K</kbd> 搜索</span>
+        <span><kbd>Ctrl</kbd> <kbd>Tab</kbd> 切换标签</span>
+      </div>
+    </div>
+
+    <!-- JSON 树抽屉 -->
+    <div v-if="store.jsonOpen && jsonValue !== undefined" id="json-drawer">
+      <div class="jd-head">
+        <span class="jd-title">JSON 树状视图</span>
+        <button class="jd-tool" @click="treeCollapseAll">全部折叠</button>
+        <button class="jd-tool" @click="treeExpandAll">全部展开</button>
+        <button class="tb-btn" aria-label="关闭树状视图" @click="store.jsonOpen = false"><Icon name="x" /></button>
+      </div>
+      <div class="jd-body">
+        <JsonTree ref="jsonTree" :json="jsonValue" />
+      </div>
+    </div>
+
+    <!-- 状态栏 -->
+    <div id="statusbar">
+      <span class="sb-save" :class="store.saveState">
+        <span class="dot"></span><span>{{ saveText }}</span>
+      </span>
+      <div class="sb-right">
+        <button v-if="isTxt" class="sb-toggle" :class="{ on: store.wrapTxt }" @click="setWrapTxt(!store.wrapTxt)">
+          <span>自动换行</span>
+        </button>
+        <span class="sb-lang">{{ isTxt ? '文本' : 'Markdown' }}</span>
+        <span v-if="tab" class="sb-words">{{ wordCount }} 字</span>
+      </div>
+    </div>
   </section>
 </template>
 
 <script setup>
 import { computed, nextTick, ref, watch } from 'vue';
-import TabBar from './TabBar.vue';
-import EditorToolbar from './EditorToolbar.vue';
+import Icon from './Icon.vue';
 import EditorPane from './EditorPane.vue';
 import PreviewPane from './PreviewPane.vue';
-import JsonBar from './JsonBar.vue';
 import JsonTree from './JsonTree.vue';
-import StatusBar from './StatusBar.vue';
-import EmptyState from './EmptyState.vue';
-import { store, activeTab, markDirty, createNote, toast } from '../store.js';
-import { detectJson } from '../lib/json-tools.js';
+import { store, activeTab, markDirty, createNote, closeTab, toast, setWrapTxt } from '../store.js';
+import { detectJson, formatJson, validateJson } from '../lib/json-tools.js';
 import { api } from '../lib/api.js';
+import { countWords } from '../lib/utils.js';
 
 const editorPane = ref(null);
-const jsonBar = ref(null);
+const jsonTree = ref(null);
+const jsonMsg = ref({ text: '', cls: '' });
 
 const tab = computed(() => activeTab());
+const isTxt = computed(() => {
+  const t = tab.value;
+  return t ? t.path.toLowerCase().endsWith('.txt') : false;
+});
+const jsonInfo = computed(() => {
+  const t = tab.value;
+  if (!t) return null;
+  return detectJson(t.content);
+});
 const jsonValue = computed(() => {
-  if (!tab.value) return undefined;
-  const info = detectJson(tab.value.content);
+  const info = jsonInfo.value;
   return info ? info.json : undefined;
+});
+const wordCount = computed(() => (tab.value ? countWords(tab.value.content) : 0));
+const saveText = computed(() => {
+  if (!tab.value) return '已保存';
+  return store.saveState === 'saving' ? '保存中…' : '已保存';
 });
 
 function onContent(content) {
   if (!tab.value) return;
   tab.value.content = content;
   markDirty(tab.value.path);
-  if (jsonBar.value) jsonBar.value.refresh();
 }
 
-function onFormatJson(text) {
-  if (!tab.value) return;
-  tab.value.content = text;
-  markDirty(tab.value.path);
-}
-
-function onFormat(kind) {
-  if (kind === 'image') {
-    insertImage();
-    return;
-  }
-  // 预览模式下点击格式按钮 → 自动切回编辑再插入
+function fmt(kind) {
   if (store.mode === 'preview') {
     store.mode = 'edit';
-    nextTick(() => {
-      if (editorPane.value) editorPane.value.format(kind);
-    });
-  } else if (editorPane.value) {
-    editorPane.value.format(kind);
+    nextTick(() => editorPane.value && editorPane.value.format(kind));
+    return;
   }
+  if (editorPane.value) editorPane.value.format(kind);
 }
 
 async function insertImage() {
@@ -88,9 +174,7 @@ async function insertImage() {
   const file = await openDialog({
     multiple: false,
     title: '插入图片',
-    filters: [
-      { name: '图片', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg'] },
-    ],
+    filters: [{ name: '图片', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg'] }],
   });
   if (typeof file !== 'string') return;
   try {
@@ -105,16 +189,76 @@ async function insertImage() {
 }
 
 async function onNewNote() {
-  const folder = store.filter.kind === 'folder' ? store.filter.value : null;
-  await createNote(folder, '新笔记');
+  const folder = store.view.type === 'folder' ? store.view.key : null;
+  await createNote(folder, '新笔记', 'md');
 }
 
-// 内容切换后刷新 JSON 工具条与 CodeMirror
+function jsonFormat() {
+  const t = tab.value;
+  if (!t || !jsonInfo.value) return;
+  const r = formatJson(jsonInfo.value.text);
+  if (r.ok) {
+    t.content = r.text;
+    markDirty(t.path);
+    jsonMsg.value = { text: '已格式化', cls: 'ok' };
+  } else {
+    jsonMsg.value = { text: 'JSON 无效', cls: 'err' };
+  }
+}
+function jsonValidate() {
+  const t = tab.value;
+  if (!t || !jsonInfo.value) return;
+  const r = validateJson(jsonInfo.value.text);
+  if (r.ok) jsonMsg.value = { text: '✓ JSON 有效', cls: 'ok' };
+  else jsonMsg.value = { text: `✗ 第 ${r.line} 行第 ${r.col} 列`, cls: 'err' };
+}
+function treeExpandAll() { if (jsonTree.value) jsonTree.value.expandAll(); }
+function treeCollapseAll() { if (jsonTree.value) jsonTree.value.collapseAll(); }
+
 watch(
   () => store.active,
-  async () => {
-    await nextTick();
-    if (jsonBar.value) jsonBar.value.refresh();
-  },
+  () => { jsonMsg.value = { text: '', cls: '' }; },
 );
 </script>
+
+<style scoped>
+.cm-wrap {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+}
+#editor-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+#editor-body.edit .cm-wrap { width: 100%; }
+#editor-body.preview .cm-wrap { display: none; }
+#editor-body.preview #editor-preview { width: 100%; }
+#editor-body.split .cm-wrap { width: 50%; }
+#editor-body.split #editor-preview { width: 50%; border-left: 1px solid var(--border-soft); }
+#editor-preview { overflow-y: auto; }
+.toolbar-hint {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-left: 10px;
+}
+.jt-msg.ok { color: var(--green); font-size: 12px; }
+.jt-msg.err { color: var(--danger); font-size: 12px; }
+#json-drawer {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 46%;
+  z-index: 60;
+  background: var(--bg);
+  border-left: 1px solid var(--border-soft);
+  display: flex;
+  flex-direction: column;
+  box-shadow: -12px 0 40px rgba(0, 0, 0, 0.12);
+}
+.jd-body { flex: 1; overflow-y: auto; }
+.sb-toggle.on { color: var(--accent); }
+</style>

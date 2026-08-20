@@ -26,6 +26,9 @@ pub fn run() {
             commands::search,
             commands::import_image,
             commands::list_fonts,
+            commands::rename_note,
+            commands::rename_tag,
+            commands::delete_tag,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
