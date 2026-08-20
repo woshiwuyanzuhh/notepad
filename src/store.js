@@ -191,6 +191,11 @@ function closeAllTabs() {
 export async function refreshNotes() {
   const list = await api.listNotes();
   store.notes = normalizeNotes(list);
+  // 清理悬空标签页：文件已不存在且无未保存内容时自动关闭（dirty 的保留，避免丢失未保存编辑）
+  const alive = new Set(store.notes.map((n) => n.path));
+  for (const t of [...store.tabs]) {
+    if (!alive.has(t.path) && !t.dirty) closeTab(t.path);
+  }
   await refreshTrash();
 }
 export async function refreshTrash() {
