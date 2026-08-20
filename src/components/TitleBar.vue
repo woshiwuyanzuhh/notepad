@@ -1,10 +1,11 @@
 <template>
   <header id="titlebar" data-tauri-drag-region>
     <button
+      v-if="!store.rail"
       id="vault-switcher"
       class="tip"
       data-tip="切换笔记库"
-      aria-expanded="false"
+      :aria-expanded="vaultMenuOpen"
       aria-haspopup="menu"
       @click="vaultMenuOpen = !vaultMenuOpen"
     >
@@ -52,7 +53,7 @@
       </div>
     </div>
 
-    <div v-if="vaultMenuOpen" class="menu ctx-menu vault-menu" @click.stop>
+    <div class="menu ctx-menu vault-menu" :class="{ open: vaultMenuOpen }" @click.stop>
       <div class="menu-title">笔记库</div>
       <div v-for="d in store.dataDirs" :key="d" class="menu-item" @click="switchTo(d)">
         <Icon name="vault" cls="m-ic" />
@@ -65,7 +66,7 @@
       </div>
     </div>
 
-    <div v-if="newMenuOpen" class="menu ctx-menu new-menu" @click.stop>
+    <div class="menu ctx-menu new-menu" :class="{ open: newMenuOpen }" @click.stop>
       <div class="menu-item" @click="onNewNote('md')">
         <Icon name="file-md" cls="m-ic" /><span class="m-label">Markdown 笔记</span><span class="m-hint">.md</span>
       </div>
@@ -77,7 +78,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import Icon from './Icon.vue';
 import {
   store, toggleTheme, createNote, searchNotes, toast, shortName,
@@ -123,6 +124,13 @@ async function addVault() {
     } catch (e) { toast('添加失败：' + e); }
   }
 }
+
+function onDocClick(e) {
+  if (!e.target.closest('#vault-switcher, .vault-menu')) vaultMenuOpen.value = false;
+  if (!e.target.closest('#btn-new, .new-menu')) newMenuOpen.value = false;
+}
+onMounted(() => document.addEventListener('mousedown', onDocClick));
+onBeforeUnmount(() => document.removeEventListener('mousedown', onDocClick));
 </script>
 
 <style scoped>

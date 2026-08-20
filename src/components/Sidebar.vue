@@ -25,7 +25,7 @@
         <button class="mini-btn" aria-label="确认" @click="confirmVaultAdd"><Icon name="check" /></button>
         <button class="mini-btn" aria-label="取消" @click="cancelVaultAdd"><Icon name="x" /></button>
       </div>
-      <div v-if="vaultMenuOpen" class="menu ctx-menu side-vault-menu" @click.stop>
+      <div class="menu ctx-menu side-vault-menu" :class="{ open: vaultMenuOpen }" @click.stop>
         <div v-for="d in store.dataDirs" :key="d" class="menu-item" @click="switchTo(d)">
           <Icon name="vault" cls="m-ic" />
           <span class="m-label">{{ shortName(d) }}</span>
@@ -182,7 +182,7 @@
 </template>
 
 <script setup>
-import { computed, nextTick, ref } from 'vue';
+import { computed, nextTick, onMounted, onBeforeUnmount, ref } from 'vue';
 import Icon from './Icon.vue';
 import {
   store, setView, openNote, openCtxMenu, shortName, switchDataDir,
@@ -295,4 +295,10 @@ async function addVault() {
     try { await completeOnboarding(dir); toast('已添加并切换'); } catch (e) { toast('添加失败：' + e); }
   }
 }
+
+function onDocClick(e) {
+  if (!e.target.closest('#vault-switcher-side, .side-vault-menu')) vaultMenuOpen.value = false;
+}
+onMounted(() => document.addEventListener('mousedown', onDocClick));
+onBeforeUnmount(() => document.removeEventListener('mousedown', onDocClick));
 </script>

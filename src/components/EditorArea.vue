@@ -282,7 +282,7 @@ function moveSplitDrag(e) {
   if (!body) return;
   const rect = body.getBoundingClientRect();
   let ratio = (e.clientX - rect.left) / rect.width;
-  ratio = Math.max(0.15, Math.min(0.85, ratio));
+  ratio = Math.max(0.05, Math.min(0.95, ratio));
   splitRatio.value = ratio;
 }
 
@@ -298,7 +298,7 @@ function stopSplitDrag() {
 onMounted(() => {
   try {
     const saved = Number(localStorage.getItem('notepad-split-ratio'));
-    if (!Number.isNaN(saved) && saved >= 0.15 && saved <= 0.85) splitRatio.value = saved;
+    if (!Number.isNaN(saved) && saved >= 0.05 && saved <= 0.95) splitRatio.value = saved;
   } catch { /* ignore */ }
 });
 

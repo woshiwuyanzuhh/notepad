@@ -358,8 +358,17 @@ kbd {
 .rail-toggle .ic { width: 15px; height: 15px; }
 
 /* 折叠 rail 模式 */
+#vault-block #vault-switcher-side { display: none; }
 #app.rail #sidebar { width: 52px; }
-#app.rail #vault-block { display: none; }
+#app.rail #vault-block { padding: 8px 8px 6px; }
+#app.rail #vault-block #vault-switcher-side {
+  display: flex; width: 36px; height: 36px; margin: 0 auto; padding: 0;
+  justify-content: center; border-radius: var(--radius-sm);
+}
+#app.rail #vault-block #vault-switcher-side .vs-name,
+#app.rail #vault-block #vault-switcher-side .chev { display: none; }
+#app.rail #vault-block #vault-add-row,
+#app.rail #vault-block .side-vault-menu { display: none !important; }
 #app.rail .nav-scroll { overflow: visible; }
 #app.rail .nav-group-label, #app.rail .n-label, #app.rail .n-count,
 #app.rail .f-caret, #app.rail .f-badges, #app.rail .tag-dot, #app.rail .f-badge,
@@ -552,10 +561,18 @@ mark.hl { background: color-mix(in oklab, var(--accent) 20%, transparent); color
 }
 #editor-preview.center { max-width: 780px; margin: 0 auto; border-left: 0; width: 100%; }
 #split-drag {
-  width: 5px; flex: none; cursor: col-resize; background: transparent; position: relative; z-index: 5;
+  width: 8px; flex: none; cursor: col-resize; background: transparent; position: relative; z-index: 20;
+  transition: background var(--motion-fast);
+  margin: 0 -2px;
+}
+#split-drag::after {
+  content: ""; position: absolute; left: 50%; top: 12px; bottom: 12px; width: 2px;
+  transform: translateX(-50%); border-radius: 1px;
+  background: color-mix(in oklab, var(--fg) 12%, transparent);
   transition: background var(--motion-fast);
 }
-#split-drag:hover, #split-drag.dragging { background: color-mix(in oklab, var(--accent) 35%, transparent); }
+#split-drag:hover, #split-drag.dragging { background: color-mix(in oklab, var(--accent) 12%, transparent); }
+#split-drag:hover::after, #split-drag.dragging::after { background: color-mix(in oklab, var(--accent) 55%, transparent); }
 
 /* 编辑区空状态 */
 #editor-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: var(--bg); }

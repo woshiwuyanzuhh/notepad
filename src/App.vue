@@ -1,5 +1,5 @@
 <template>
-  <div id="app">
+  <div id="app" :class="{ rail: store.rail, pure: store.pureMode }">
     <IconSprite />
 
     <TitleBar />
