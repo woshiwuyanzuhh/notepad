@@ -190,6 +190,7 @@ export async function switchDataDir(dir) {
   closeAllTabs();
   store.query = '';
   store.view = { type: 'all', key: null };
+  store.foldersOpen = new Set();
   await refreshNotes();
   toast('已切换到：' + shortName(dir));
 }
