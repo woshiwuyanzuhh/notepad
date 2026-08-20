@@ -6,7 +6,7 @@
         <span id="list-count">{{ listCount }}</span>
       </div>
       <div class="lh-tools" id="lh-tools">
-        <button class="sort-btn" id="sort-btn" aria-haspopup="menu" @click="sortMenuOpen = !sortMenuOpen">
+        <button class="sort-btn" id="sort-btn" aria-haspopup="menu" aria-expanded="sortMenuOpen" @click.stop="sortMenuOpen = !sortMenuOpen">
           <Icon name="clock" /><span>{{ sortLabel }}</span><Icon name="chev-d" cls="sort-chev" />
         </button>
         <span class="flex-spacer"></span>
@@ -21,7 +21,7 @@
       </div>
     </div>
 
-    <div v-if="sortMenuOpen" class="menu ctx-menu sort-menu" @click.stop>
+    <div class="menu ctx-menu sort-menu" :class="{ open: sortMenuOpen }" @click.stop>
       <div
         v-for="s in SORTS"
         :key="s.value"
@@ -111,7 +111,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted, onUnmounted } from 'vue';
 import Icon from './Icon.vue';
 import {
   store, visibleNotes, viewTitle, openNote, openCtxMenu, setListView, setSortBy,
@@ -168,4 +168,14 @@ function onCardClick(e, n) {
   openNote(n.path);
 }
 function pickSort(v) { setSortBy(v); sortMenuOpen.value = false; }
+
+function closeSortMenuOnOutside(e) {
+  const btn = document.getElementById('sort-btn');
+  const menu = document.querySelector('.sort-menu');
+  if (menu && !menu.contains(e.target) && btn && !btn.contains(e.target)) {
+    sortMenuOpen.value = false;
+  }
+}
+onMounted(() => document.addEventListener('click', closeSortMenuOnOutside));
+onUnmounted(() => document.removeEventListener('click', closeSortMenuOnOutside));
 </script>

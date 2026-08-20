@@ -237,8 +237,9 @@ pub async fn create_note(
 ) -> Result<String, String> {
     let root = data_dir()?;
     let fmt = match format.as_deref() {
-        Some("txt") => "txt",
-        _ => "md",
+        Some("txt") | Some("text") => "txt",
+        Some("md") | Some("markdown") | None => "md",
+        Some(other) => return Err(format!("不支持的笔记格式: {other}")),
     };
     let stem = sanitize_name(&title);
     let dir = match folder {
@@ -286,7 +287,16 @@ pub async fn delete_note(path: String) -> Result<(), String> {
         .file_name()
         .map(|s| s.to_string_lossy().to_string())
         .unwrap_or_else(|| "note.md".into());
-    let target = unique_path(&trash_dir, name.trim_end_matches(".md"), ".md");
+    // 保留原始扩展名（md/txt），避免 txt 被强制改成 .md
+    let ext = file
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("md");
+    let stem = file
+        .file_stem()
+        .map(|s| s.to_string_lossy().to_string())
+        .unwrap_or_else(|| name.clone());
+    let target = unique_path(&trash_dir, &stem, &format!(".{ext}"));
     let target_name = target
         .file_name()
         .map(|s| s.to_string_lossy().to_string())
@@ -315,7 +325,7 @@ pub async fn list_trash() -> Result<Vec<TrashEntryView>, String> {
         let known: Vec<String> = out.iter().map(|t| t.name.clone()).collect();
         for e in entries.flatten() {
             let name = e.file_name().to_string_lossy().to_string();
-            if name.ends_with(".md") && !known.contains(&name) {
+            if (name.ends_with(".md") || name.ends_with(".txt")) && !known.contains(&name) {
                 out.push(TrashEntryView {
                     name,
                     original: String::new(),
@@ -341,24 +351,44 @@ pub async fn restore_note(name: String) -> Result<(), String> {
         .find(|t| t.name == name)
         .map(|t| t.original.clone())
         .unwrap_or_default();
-    let target = if original.is_empty() {
-        unique_path(&root, name.trim_end_matches(".md"), ".md")
+
+    // 优先按 original 路径的扩展名恢复；若 original 为空则按回收站文件实际扩展名。
+    let (dir, stem, ext) = if original.is_empty() {
+        let ext = src
+            .extension()
+            .and_then(|e| e.to_str())
+            .unwrap_or("md");
+        let stem = src
+            .file_stem()
+            .map(|s| s.to_string_lossy().to_string())
+            .unwrap_or_else(|| name.clone());
+        (root.clone(), stem, ext.to_string())
     } else {
         let dir = match original.rsplit_once('/') {
             Some((d, _)) if !d.is_empty() => resolve(&root, d)?,
             _ => root.clone(),
         };
-        std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-        unique_path(
-            &dir,
-            original
-                .rsplit('/')
-                .next()
-                .unwrap_or(&name)
-                .trim_end_matches(".md"),
-            ".md",
-        )
+        let original_path = Path::new(&original);
+        let ext = original_path
+            .extension()
+            .and_then(|e| e.to_str())
+            .unwrap_or(
+                src.extension()
+                    .and_then(|e| e.to_str())
+                    .unwrap_or("md"),
+            );
+        let stem = original_path
+            .file_stem()
+            .map(|s| s.to_string_lossy().to_string())
+            .unwrap_or_else(|| {
+                src.file_stem()
+                    .map(|s| s.to_string_lossy().to_string())
+                    .unwrap_or_else(|| name.clone())
+            });
+        (dir, stem, ext.to_string())
     };
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let target = unique_path(&dir, &stem, &format!(".{ext}"));
     std::fs::rename(&src, &target).map_err(|e| e.to_string())?;
     remove_trash_entry(&mut meta, &name);
     save_meta(&root, &meta)

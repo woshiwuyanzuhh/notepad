@@ -19,6 +19,15 @@ fn ensure_inside_rejects_escape() {
 }
 
 #[test]
+fn ensure_inside_accepts_non_c_drive() {
+    // 修复前：RootDir 被硬编码为 C:\\，导致 D 盘自己的子路径被拒绝。
+    let root = std::path::Path::new("D:/notes");
+    assert!(ensure_inside(root, std::path::Path::new("D:/notes/工作/笔记.md")).is_ok());
+    assert!(ensure_inside(root, std::path::Path::new("D:/other/x.md")).is_err());
+    assert!(ensure_inside(root, std::path::Path::new("C:/notes/x.md")).is_err());
+}
+
+#[test]
 fn scan_markdown_finds_md_and_txt_files_and_skips_trash() {
     let dir = tempfile::tempdir().unwrap();
     let root = dir.path();

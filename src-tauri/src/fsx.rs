@@ -14,6 +14,7 @@ pub fn ensure_inside(root: &Path, path: &Path) -> Result<PathBuf, String> {
 
 fn absolutize(p: &Path) -> PathBuf {
     let mut out = PathBuf::new();
+    let mut has_prefix = false;
     for comp in p.components() {
         match comp {
             Component::Normal(c) => out.push(c),
@@ -21,8 +22,21 @@ fn absolutize(p: &Path) -> PathBuf {
             Component::ParentDir => {
                 out.pop();
             }
-            Component::RootDir => out.push(Path::new(if cfg!(windows) { "C:\\" } else { "/" })),
-            Component::Prefix(pre) => out.push(pre.as_os_str()),
+            Component::RootDir => {
+                // Unix: RootDir 就是文件系统根，必须保留。
+                // Windows: 盘符 Prefix 已经决定根，RootDir 只是分隔符；
+                // 若把 RootDir 固定写成 C:\\，会导致 D/E 盘路径被误判到 C 盘。
+                if !has_prefix {
+                    out.push("/");
+                }
+            }
+            Component::Prefix(pre) => {
+                out.push(pre.as_os_str());
+                // Windows 盘符如 C: 本身不是绝对路径根，需要补一个根分隔符，
+                // 这样后续 Normal 组件才落在 C:\\ 下而非 C: 当前目录。
+                out.push("\\");
+                has_prefix = true;
+            }
         }
     }
     out

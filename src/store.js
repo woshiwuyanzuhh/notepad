@@ -139,7 +139,12 @@ async function restoreSession() {
     if (!s || s.dir !== store.dataDir || !Array.isArray(s.tabs)) return;
     const alive = new Set(store.notes.map((n) => n.path));
     for (const p of s.tabs) {
-      if (alive.has(p)) await openNote(p);
+      if (!alive.has(p)) continue;
+      try {
+        await openNote(p);
+      } catch (err) {
+        console.warn(`恢复会话时无法打开笔记 ${p}:`, err);
+      }
     }
     if (s.active && store.tabs.some((t) => t.path === s.active)) store.active = s.active;
   } catch { /* ignore */ }
@@ -256,11 +261,11 @@ export async function createNote(folder, title, format = 'md') {
 
 export async function renameNote(path, newName) {
   const newPath = await api.renameNote(path, newName);
-  // 更新标签页
+  // 更新标签页：title 必须从实际新路径提取，因为 unique_path 可能追加 (2)。
   const tab = store.tabs.find((t) => t.path === path);
   if (tab) {
     tab.path = newPath;
-    tab.title = newName.replace(/\.(md|txt)$/i, '');
+    tab.title = newPath.split('/').pop().replace(/\.(md|txt)$/i, '');
   }
   if (store.active === path) store.active = newPath;
   await refreshNotes();
@@ -291,13 +296,14 @@ export function markDirty(path) {
 
 export async function doSave(path) {
   const tab = store.tabs.find((t) => t.path === path);
-  if (!tab) return;
+  if (!tab) return false;
   try {
     const savedMtime = await api.writeNote(path, tab.content, tab.mtime);
     tab.mtime = savedMtime;
     tab.dirty = false;
     store.saveState = 'saved';
     updateExcerpt(tab);
+    return true;
   } catch (e) {
     const msg = String(e);
     if (msg.startsWith('CONFLICT:')) {
@@ -320,9 +326,11 @@ export async function doSave(path) {
         store.saveState = 'saved';
         toast('已重新加载外部版本');
       }
+      return true;
     } else {
       store.saveState = 'saved';
       toast('保存失败：' + e);
+      return false;
     }
   }
 }
@@ -378,7 +386,13 @@ export async function setNoteTags(path, tags) {
 }
 export async function moveToTrash(path) {
   const tab = store.tabs.find((t) => t.path === path);
-  if (tab && tab.dirty) await doSave(path);
+  if (tab && tab.dirty) {
+    const saved = await doSave(path);
+    if (!saved) {
+      toast('笔记未保存，已取消删除');
+      return;
+    }
+  }
   await api.deleteNote(path);
   closeTab(path);
   await refreshNotes();

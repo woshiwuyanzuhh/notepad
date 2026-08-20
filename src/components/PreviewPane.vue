@@ -16,6 +16,23 @@ const props = defineProps({
 const html = computed(() => renderMarkdown(props.content, store.dataDir));
 
 function onPreviewClick(e) {
+  const link = e.target.closest('a[href]');
+  if (link) {
+    e.preventDefault();
+    const href = link.getAttribute('href') || '';
+    if (href.startsWith('http://') || href.startsWith('https://')) {
+      navigator.clipboard.writeText(href)
+        .then(() => toast('链接已复制，请在外部浏览器打开'))
+        .catch(() => toast('复制链接失败'));
+    } else if (href.startsWith('#')) {
+      const target = document.getElementById(href.slice(1)) || document.querySelector(`[name="${href.slice(1)}"]`);
+      target?.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      toast('内部链接暂不处理');
+    }
+    return;
+  }
+
   const btn = e.target.closest('.cb-copy');
   if (!btn) return;
   const code = btn.closest('.codeblock')?.querySelector('code');
