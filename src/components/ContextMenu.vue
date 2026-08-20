@@ -6,7 +6,7 @@
       @click="closeCtxMenu"
       @contextmenu.prevent="closeCtxMenu"
     >
-      <div class="menu ctx-menu" :style="{ left: store.ctxMenu.x + 'px', top: store.ctxMenu.y + 'px' }">
+      <div class="menu ctx-menu" :class="{ open: store.ctxMenu.visible }" :style="{ left: store.ctxMenu.x + 'px', top: store.ctxMenu.y + 'px' }">
         <!-- 重命名面板 -->
         <template v-if="store.ctxMenu.panel === 'rename'">
           <div class="ctx-head">重新命名</div>
