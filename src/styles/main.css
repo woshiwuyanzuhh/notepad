@@ -631,3 +631,16 @@ html[data-theme="dark"] .seg-indi{box-shadow:0 1px 4px rgba(0,0,0,.5)}
 .type-badge.md{background:color-mix(in oklab,var(--accent) 14%,transparent);color:var(--accent)}
 .type-badge.txt{background:color-mix(in oklab,oklch(.62 .14 152) 16%,transparent);color:oklch(.52 .12 152)}
 html[data-theme="dark"] .type-badge.txt{color:oklch(.70 .14 152)}
+
+/* ─── 果冻动画 ─────────────────────────────────────────── */
+@keyframes jelly{
+  0%{transform:scale(1)}
+  25%{transform:scale(.965,.99)}
+  50%{transform:scale(1.035,.985)}
+  70%{transform:scale(.985,1.012)}
+  100%{transform:scale(1)}
+}
+.card.jelly{animation:jelly .45s var(--ease-standard)}
+
+/* ─── 状态栏字数 ───────────────────────────────────────── */
+.sb-words{font-variant-numeric:tabular-nums;margin-right:14px;color:var(--fg-2)}

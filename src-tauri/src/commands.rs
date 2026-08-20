@@ -76,6 +76,8 @@ pub struct NoteMeta {
     pub mtime: u64,
     pub size: u64,
     pub excerpt: String,
+    pub color: Option<String>,
+    pub jelly: Option<bool>,
 }
 
 #[derive(Serialize)]
@@ -149,6 +151,8 @@ pub async fn list_notes() -> Result<Vec<NoteMeta>, String> {
             tags: entry.and_then(|e| e.tags.clone()).unwrap_or_default(),
             star: entry.and_then(|e| e.star).unwrap_or(false),
             pin: entry.and_then(|e| e.pin).unwrap_or(false),
+            color: entry.and_then(|e| e.color.clone()),
+            jelly: entry.and_then(|e| e.jelly),
             mtime: mtime_ms(&file),
             size: md.len(),
             excerpt,
@@ -235,11 +239,13 @@ pub async fn set_note_meta(
     pin: Option<bool>,
     tags: Option<Vec<String>>,
     folder: Option<String>,
+    color: Option<String>,
+    jelly: Option<bool>,
 ) -> Result<(), String> {
     let root = data_dir()?;
     let _file = resolve(&root, &path)?; // 校验路径合法
     let mut meta = load_meta(&root);
-    set_meta_field(&mut meta, &path, star, pin, tags, folder);
+    set_meta_field(&mut meta, &path, star, pin, tags, folder, color, jelly);
     save_meta(&root, &meta)
 }
 

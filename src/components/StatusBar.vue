@@ -13,6 +13,7 @@
         <span class="wrap-box"></span>
         自动换行
       </button>
+      <span class="sb-words" title="当前笔记字符数">{{ words }}</span>
       <span id="statCursor">{{ statCursor }}</span>
       <span class="save-state" :class="store.saveState">
         <span class="save-dot"></span>
@@ -36,6 +37,12 @@ const isTxt = computed(() => {
 const statCount = computed(() => {
   if (!tab.value) return '—';
   return `${countWords(tab.value.content)} 字 · ${countLines(tab.value.content)} 行`;
+});
+
+/** 右下角：当前笔记字符数 */
+const words = computed(() => {
+  if (!tab.value) return '';
+  return `${countWords(tab.value.content)} 字`;
 });
 
 const statCursor = computed(() => '');

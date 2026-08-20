@@ -16,6 +16,12 @@ pub struct NoteMetaEntry {
     pub tags: Option<Vec<String>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub folder: Option<String>,
+    /// 卡片颜色（hex，如 #FFD9D9）；None = 默认
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub color: Option<String>,
+    /// 果冻动画开关；None = 默认开
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub jelly: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Default)]
@@ -66,6 +72,8 @@ pub fn set_note_meta(
     pin: Option<bool>,
     tags: Option<Vec<String>>,
     folder: Option<String>,
+    color: Option<String>,
+    jelly: Option<bool>,
 ) {
     let entry = meta.notes.entry(rel.to_string()).or_default();
     if star.is_some() {
@@ -80,8 +88,20 @@ pub fn set_note_meta(
     if folder.is_some() {
         entry.folder = folder;
     }
+    if color.is_some() {
+        entry.color = color;
+    }
+    if jelly.is_some() {
+        entry.jelly = jelly;
+    }
     // 全空则移除条目，保持文件干净
-    if entry.star.is_none() && entry.pin.is_none() && entry.tags.is_none() && entry.folder.is_none() {
+    let empty = entry.star.is_none()
+        && entry.pin.is_none()
+        && entry.tags.is_none()
+        && entry.folder.is_none()
+        && entry.color.is_none()
+        && entry.jelly.is_none();
+    if empty {
         meta.notes.remove(rel);
     }
 }

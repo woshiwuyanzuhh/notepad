@@ -5,7 +5,7 @@
       <span class="cnt">{{ listCount }}</span>
     </div>
 
-    <div class="cards">
+    <div class="cards" @contextmenu.prevent="onListCtx">
       <!-- 回收站视图 -->
       <template v-if="store.filter.kind === 'trash'">
         <div v-for="t in store.trash" :key="t.name" class="trash-row">
@@ -33,7 +33,10 @@
           :key="n.path"
           class="card"
           :class="{ on: store.active === n.path }"
-          @click="openNote(n.path)"
+          :style="cardStyle(n)"
+          :data-jelly="n.jelly !== false ? '1' : '0'"
+          @click="onCardClick($event, n)"
+          @contextmenu.prevent="onCtx($event, n.path)"
         >
           <div class="card-title" v-html="markHit(n.title, store.q)"></div>
           <div class="card-sum" v-html="markHit(n.excerpt, store.q)"></div>
@@ -80,7 +83,7 @@
 <script setup>
 import { computed } from 'vue';
 import Icon from './Icon.vue';
-import { store, openNote, toggleStar, togglePin, moveToTrash, restoreNote, purgeNote } from '../store.js';
+import { store, openNote, toggleStar, togglePin, moveToTrash, restoreNote, purgeNote, openCtxMenu } from '../store.js';
 import { visibleNotes } from '../store.js';
 import { relTime } from '../lib/utils.js';
 import { markHit } from '../lib/search.js';
@@ -108,6 +111,34 @@ const listCount = computed(() => {
 
 function isTxt(n) {
   return n.path.toLowerCase().endsWith('.txt');
+}
+
+/** 卡片颜色样式（柔和背景） */
+function cardStyle(n) {
+  if (!n.color) return null;
+  return { background: `color-mix(in srgb, ${n.color} 30%, var(--surface))` };
+}
+
+/** 卡片点击：果冻动画 + 打开笔记 */
+function onCardClick(e, n) {
+  const card = e.currentTarget;
+  if (n.jelly !== false) {
+    card.classList.remove('jelly');
+    void card.offsetWidth;
+    card.classList.add('jelly');
+  }
+  openNote(n.path);
+}
+
+/** 卡片右键菜单 */
+function onCtx(e, path) {
+  openCtxMenu(e, path);
+}
+
+/** 列表空白区右键（卡片已处理则跳过） */
+function onListCtx(e) {
+  if (e.target.closest('.card') || e.target.closest('.trash-row')) return;
+  openCtxMenu(e, null);
 }
 
 async function onDelete(path) {

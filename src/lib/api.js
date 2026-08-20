@@ -20,6 +20,8 @@ export const api = {
       pin: meta.pin ?? null,
       tags: meta.tags ?? null,
       folder: meta.folder ?? null,
+      color: meta.color ?? null,
+      jelly: meta.jelly ?? null,
     }),
 
   deleteNote: (path) => invoke('delete_note', { path }),

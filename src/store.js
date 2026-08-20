@@ -35,7 +35,43 @@ export const store = reactive({
   saveState: 'saved', // saved | saving
   toastMsg: '',
   toastTimer: null,
+
+  // 右键菜单状态
+  ctxMenu: { visible: false, x: 0, y: 0, path: null },
 });
+
+/* ── 右键菜单 ─────────────────────────────────────────── */
+export function openCtxMenu(e, path) {
+  store.ctxMenu.visible = true;
+  store.ctxMenu.path = path;
+  const menuW = 220;
+  const menuH = 300;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  store.ctxMenu.x = Math.min(e.clientX, vw - menuW - 8);
+  store.ctxMenu.y = Math.min(e.clientY, vh - menuH - 8);
+}
+
+export function closeCtxMenu() {
+  store.ctxMenu.visible = false;
+  store.ctxMenu.path = null;
+}
+
+/** 设置卡片颜色（'' = 清除） */
+export async function setNoteColor(path, color) {
+  const meta = store.notes.find((n) => n.path === path);
+  if (!meta) return;
+  await api.setNoteMeta(path, { color });
+  meta.color = color || null;
+}
+
+/** 切换果冻动画 */
+export async function setNoteJelly(path, on) {
+  const meta = store.notes.find((n) => n.path === path);
+  if (!meta) return;
+  await api.setNoteMeta(path, { jelly: on });
+  meta.jelly = on;
+}
 
 /* ── 主题 ─────────────────────────────────────────────── */
 export function applyTheme(theme) {
