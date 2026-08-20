@@ -5,7 +5,7 @@
 <script setup>
 import { onMounted, onBeforeUnmount, ref, watch } from 'vue';
 import { EditorView, keymap, placeholder } from '@codemirror/view';
-import { EditorState } from '@codemirror/state';
+import { Compartment, EditorState } from '@codemirror/state';
 import { markdown } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
 import {
@@ -27,6 +27,10 @@ const host = ref(null);
 let view = null;
 let applyingExternal = false;
 
+// 动态扩展槽：语言与换行通过 Compartment 切换，避免销毁重建
+const langCompartment = new Compartment();
+const wrapCompartment = new Compartment();
+
 function buildExtensions() {
   const exts = [
     history(),
@@ -41,14 +45,9 @@ function buildExtensions() {
         applyingExternal = false;
       }
     }),
+    langCompartment.of(markdown({ codeLanguages: languages })),
+    wrapCompartment.of(EditorView.lineWrapping),
   ];
-  if (props.isMarkdown) {
-    exts.unshift(markdown({ codeLanguages: languages }));
-  }
-  // md 始终换行；txt 由 store.wrapTxt 决定（默认关闭 → 水平滚动）
-  if (props.isMarkdown || store.wrapTxt) {
-    exts.push(EditorView.lineWrapping);
-  }
   return exts;
 }
 
@@ -59,17 +58,31 @@ function createState() {
   });
 }
 
+function syncCompartments() {
+  if (!view) return;
+  const lang = props.isMarkdown ? markdown({ codeLanguages: languages }) : [];
+  const wrap = props.isMarkdown || store.wrapTxt ? EditorView.lineWrapping : [];
+  view.dispatch({
+    effects: [
+      langCompartment.reconfigure(lang),
+      wrapCompartment.reconfigure(wrap),
+    ],
+  });
+}
+
 onMounted(() => {
   view = new EditorView({ state: createState(), parent: host.value });
+  syncCompartments();
 });
 
 watch(
   () => props.content,
   (val) => {
-    if (!view || applyingExternal) return;
+    if (!view || view.destroyed || applyingExternal) return;
     if (view.state.doc.toString() !== val) {
       view.dispatch({
         changes: { from: 0, to: view.state.doc.length, insert: val },
+        selection: { anchor: 0 },
       });
     }
   },
@@ -78,30 +91,16 @@ watch(
 watch(
   () => props.isMarkdown,
   () => {
-    rebuild();
+    syncCompartments();
   },
 );
 
 watch(
   () => store.wrapTxt,
   () => {
-    rebuild();
+    syncCompartments();
   },
 );
-
-function rebuild() {
-  if (!view) return;
-  const doc = view.state.doc.toString();
-  const sel = view.state.selection.main;
-  view.destroy();
-  const state = createState();
-  view = new EditorView({ state, parent: host.value });
-  // 恢复文档与光标
-  if (view.state.doc.toString() !== doc) {
-    view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: doc } });
-  }
-  view.dispatch({ selection: { anchor: Math.min(sel.anchor, doc.length) } });
-}
 
 const notepadTheme = EditorView.theme({
   '&': {
@@ -133,45 +132,9 @@ const notepadTheme = EditorView.theme({
   '.ͼb': { fontFamily: 'var(--font-mono)', fontSize: '13px' },
 });
 
-onMounted(() => {
-  view = new EditorView({
-    state: EditorState.create({
-      doc: props.content,
-      extensions: [
-        markdown({ codeLanguages: languages }),
-        history(),
-        highlightSelectionMatches(),
-        keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap, indentWithTab]),
-        placeholder('开始输入…'),
-        notepadTheme,
-        EditorView.lineWrapping,
-        EditorView.updateListener.of((u) => {
-          if (u.docChanged) {
-            applyingExternal = true;
-            emit('update:content', u.state.doc.toString());
-            applyingExternal = false;
-          }
-        }),
-      ],
-    }),
-    parent: host.value,
-  });
-});
-
-watch(
-  () => props.content,
-  (val) => {
-    if (!view || applyingExternal) return;
-    if (view.state.doc.toString() !== val) {
-      view.dispatch({
-        changes: { from: 0, to: view.state.doc.length, insert: val },
-      });
-    }
-  },
-);
-
 onBeforeUnmount(() => {
-  if (view) view.destroy();
+  if (view && !view.destroyed) view.destroy();
+  view = null;
 });
 
 /* ── 格式工具：对选区包裹 / 行首插入 Markdown 语法 ── */
@@ -190,34 +153,41 @@ const LINE_PRE = {
   quote: '> ',
 };
 
+function aliveView() {
+  if (view && !view.destroyed) return view;
+  return null;
+}
+
 /** 在光标处插入文本（用于图片等自定义插入） */
 function insertText(text) {
-  if (!view) return;
-  const { from } = view.state.selection.main;
-  view.dispatch({
+  const v = aliveView();
+  if (!v) return;
+  const { from } = v.state.selection.main;
+  v.dispatch({
     changes: { from, insert: text },
     selection: { anchor: from + text.length },
   });
-  view.focus();
+  v.focus();
 }
 
 function format(kind, custom) {
-  if (!view) return;
+  const v = aliveView();
+  if (!v) return;
   const wrap = WRAP[kind];
   if (wrap) {
-    const { from, to } = view.state.selection.main;
-    const selected = view.state.doc.sliceString(from, to);
+    const { from, to } = v.state.selection.main;
+    const selected = v.state.doc.sliceString(from, to);
     const text = selected || wrap.hint;
     if (custom) {
       const [post, hint] = custom;
       const body = selected || hint;
-      view.dispatch({
+      v.dispatch({
         changes: { from, to, insert: wrap.pre + body + post },
         selection: { anchor: from + wrap.pre.length, head: from + wrap.pre.length + body.length },
       });
       return;
     }
-    view.dispatch({
+    v.dispatch({
       changes: { from, to, insert: wrap.pre + text + wrap.post },
       selection: { anchor: from + wrap.pre.length, head: from + wrap.pre.length + text.length },
     });
@@ -225,9 +195,9 @@ function format(kind, custom) {
   }
   const pre = LINE_PRE[kind];
   if (pre) {
-    const { from } = view.state.selection.main;
-    const line = view.state.doc.lineAt(from);
-    view.dispatch({
+    const { from } = v.state.selection.main;
+    const line = v.state.doc.lineAt(from);
+    v.dispatch({
       changes: { from: line.from, insert: pre },
       selection: { anchor: from + pre.length },
     });
