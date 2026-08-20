@@ -13,6 +13,18 @@
         <span class="vs-name">{{ shortName(store.dataDir) }}</span>
         <Icon name="chev-d" cls="chev" />
       </button>
+      <div id="vault-add-row" :class="{ open: vaultAddOpen }">
+        <input
+          id="vault-add-input"
+          v-model="newVaultName"
+          type="text"
+          placeholder="新库名称，如：个人"
+          aria-label="新库名称"
+          @keydown.enter="confirmVaultAdd"
+        />
+        <button class="mini-btn" aria-label="确认" @click="confirmVaultAdd"><Icon name="check" /></button>
+        <button class="mini-btn" aria-label="取消" @click="cancelVaultAdd"><Icon name="x" /></button>
+      </div>
       <div v-if="vaultMenuOpen" class="menu ctx-menu side-vault-menu" @click.stop>
         <div v-for="d in store.dataDirs" :key="d" class="menu-item" @click="switchTo(d)">
           <Icon name="vault" cls="m-ic" />
@@ -20,9 +32,9 @@
           <Icon v-if="d === store.dataDir" name="check" cls="m-check" />
         </div>
         <div class="menu-divider"></div>
-        <div class="menu-item" @click="addVault">
-          <Icon name="plus" cls="m-ic" /><span class="m-label">添加新文件夹…</span>
-        </div>
+      <div class="menu-item" @click="openVaultAdd">
+        <Icon name="plus" cls="m-ic" /><span class="m-label">添加新文件夹…</span>
+      </div>
       </div>
     </div>
 
@@ -52,8 +64,8 @@
           data-tip="最近编辑"
           @click="setView('recent')"
         >
-          <Icon name="clock" /><span class="n-label">最近编辑</span>
-        </button>
+        <Icon name="clock" /><span class="n-label">最近编辑</span><span class="n-count">{{ recentCount }}</span>
+      </button>
       </div>
 
       <!-- 文件夹树 -->
@@ -181,6 +193,17 @@ const tagEditInput = ref(null);
 
 const tags = computed(() => tagList());
 const starredCount = computed(() => store.notes.filter((n) => n.star).length);
+const recentCount = computed(() => Math.min(store.notes.length, 30));
+
+const vaultAddOpen = ref(false);
+const newVaultName = ref('');
+function openVaultAdd() { vaultMenuOpen.value = false; vaultAddOpen.value = true; }
+async function confirmVaultAdd() {
+  vaultAddOpen.value = false;
+  newVaultName.value = '';
+  await addVault();
+}
+function cancelVaultAdd() { vaultAddOpen.value = false; newVaultName.value = ''; }
 
 function isTxt(n) { return n.path.toLowerCase().endsWith('.txt'); }
 function tagDotCls(name) {
