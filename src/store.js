@@ -109,6 +109,7 @@ function initPrefs() {
     store.wrapTxt = localStorage.getItem('notepad-wraptxt') === '1';
     store.listView = localStorage.getItem('notepad-listview') || 'list';
     store.sortBy = localStorage.getItem('notepad-sort') || 'modified';
+    if (!['modified', 'created', 'title'].includes(store.sortBy)) store.sortBy = 'modified';
   } catch { /* ignore */ }
   applyFont();
 }
@@ -121,6 +122,28 @@ export function toast(msg) {
 }
 
 /* ── 初始化 / 引导 ─────────────────────────────────────── */
+/** 持久化当前 tab 会话（打开的标签 + 激活项），按数据目录隔离 */
+function persistSession() {
+  try {
+    localStorage.setItem('notepad-session', JSON.stringify({
+      dir: store.dataDir,
+      tabs: store.tabs.map((t) => t.path),
+      active: store.active,
+    }));
+  } catch { /* ignore */ }
+}
+/** 启动时恢复上次会话：仅当目录一致且文件仍存在时才恢复（防幽灵 tab） */
+async function restoreSession() {
+  try {
+    const s = JSON.parse(localStorage.getItem('notepad-session') || 'null');
+    if (!s || s.dir !== store.dataDir || !Array.isArray(s.tabs)) return;
+    const alive = new Set(store.notes.map((n) => n.path));
+    for (const p of s.tabs) {
+      if (alive.has(p)) await openNote(p);
+    }
+    if (s.active && store.tabs.some((t) => t.path === s.active)) store.active = s.active;
+  } catch { /* ignore */ }
+}
 export async function init() {
   initTheme();
   initPrefs();
@@ -132,6 +155,7 @@ export async function init() {
       store.dataDirs = Array.isArray(cfg.data_dirs) && cfg.data_dirs.length ? cfg.data_dirs : [cfg.data_dir];
       store.onboarded = true;
       await refreshNotes();
+      await restoreSession();
     } else {
       store.onboarded = false;
     }
@@ -185,6 +209,7 @@ function closeAllTabs() {
   store.tabs = [];
   store.active = null;
   store.jsonOpen = false;
+  persistSession();
 }
 
 /* ── 笔记列表 ─────────────────────────────────────────── */
@@ -219,6 +244,7 @@ export async function openNote(path) {
   store.active = path;
   store.view = { type: 'all', key: null };
   store.query = '';
+  persistSession();
 }
 
 export async function createNote(folder, title, format = 'md') {
@@ -238,6 +264,7 @@ export async function renameNote(path, newName) {
   }
   if (store.active === path) store.active = newPath;
   await refreshNotes();
+  persistSession();
   return newPath;
 }
 
@@ -249,6 +276,7 @@ export function closeTab(path) {
     const next = store.tabs[idx] || store.tabs[idx - 1];
     store.active = next ? next.path : null;
   }
+  persistSession();
 }
 
 const saveDebounced = debounce((path) => { doSave(path); }, 900);
@@ -472,7 +500,7 @@ export function visibleNotes() {
   return [...list].sort((a, b) => {
     if (a.pin !== b.pin) return b.pin - a.pin;
     if (s === 'title') return a.title.localeCompare(b.title, 'zh');
-    if (s === 'words') return b.word_count - a.word_count;
+    if (s === 'created') return b.ctime - a.ctime;
     return b.mtime - a.mtime;
   });
 }

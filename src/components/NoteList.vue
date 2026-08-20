@@ -82,9 +82,10 @@
           ><Icon name="pin" /></button>
         </div>
         <div v-if="n.tags.length" class="card-tags">
-          <span v-for="t in n.tags" :key="t" class="card-tag">
+          <span v-for="t in n.tags.slice(0, 2)" :key="t" class="card-tag">
             <span class="tag-dot" :class="tagDotCls(t)"></span>{{ t }}
           </span>
+          <span v-if="n.tags.length > 2" class="card-tag">+{{ n.tags.length - 2 }}</span>
         </div>
         <div class="card-ex">{{ n.excerpt }}</div>
         <div class="card-foot">
@@ -99,10 +100,10 @@
 
     <!-- 空状态 -->
     <div v-if="visible.length === 0 && store.view.type !== 'trash'" id="list-empty">
-      <div class="le-ic" id="le-icon"><Icon :name="store.query ? 'search' : 'all'" /></div>
-      <div class="le-title" id="le-title">{{ store.query ? '未找到相关笔记' : viewTitle() }}</div>
-      <div class="le-sub" id="le-sub">{{ store.query ? '换个关键词试试' : '新建一篇笔记开始记录' }}</div>
-      <button class="btn-ghost" id="le-action" @click="createNote(null, '新笔记', 'md')">
+      <div class="le-ic" id="le-icon"><Icon :name="emptyState.icon" /></div>
+      <div class="le-title" id="le-title">{{ emptyState.title }}</div>
+      <div class="le-sub" id="le-sub">{{ emptyState.sub }}</div>
+      <button v-if="emptyState.action" class="btn-ghost" id="le-action" @click="createNote(null, '新笔记', 'md')">
         <Icon name="plus" />新建笔记
       </button>
     </div>
@@ -120,14 +121,31 @@ import { relTime } from '../lib/utils.js';
 
 const SORTS = [
   { value: 'modified', label: '按修改时间', icon: 'clock' },
-  { value: 'title', label: '按标题', icon: 'all' },
-  { value: 'words', label: '按字数', icon: 'list' },
+  { value: 'created', label: '按创建时间', icon: 'plus' },
+  { value: 'title', label: '按标题', icon: 'list' },
 ];
 const sortMenuOpen = ref(false);
 
 const visible = computed(() => visibleNotes());
 const listCount = computed(() => (store.view.type === 'trash' ? store.trash.length : `${visible.value.length} 篇`));
 const sortLabel = computed(() => SORTS.find((s) => s.value === store.sortBy)?.label || '按修改时间');
+const emptyState = computed(() => {
+  const q = store.query.trim();
+  if (q) {
+    return { icon: 'search', title: `未找到与「${q}」相关的内容`, sub: '试试更短的关键词，或检查标题、正文与标签。', action: false };
+  }
+  const v = store.view.type;
+  if (v === 'starred') {
+    return { icon: 'star', title: '还没有收藏的笔记', sub: '点击卡片上的星标，重要笔记就会出现在这里。', action: false };
+  }
+  if (v === 'folder') {
+    return { icon: 'folder', title: '此文件夹还没有笔记', sub: '在该文件夹中新建一篇 Markdown 或文本笔记。', action: true };
+  }
+  if (v === 'tag') {
+    return { icon: 'tag', title: '此标签下暂无笔记', sub: '给笔记添加标签后即可在此归类查看。', action: true };
+  }
+  return { icon: 'all', title: '还没有笔记', sub: '新建第一篇笔记，或从其他文件夹导入。', action: true };
+});
 
 function isTxt(n) { return n.path.toLowerCase().endsWith('.txt'); }
 function tagDotCls(name) {

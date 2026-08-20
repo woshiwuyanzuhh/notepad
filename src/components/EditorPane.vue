@@ -21,7 +21,7 @@ const props = defineProps({
   content: { type: String, default: '' },
   isMarkdown: { type: Boolean, default: true },
 });
-const emit = defineEmits(['update:content']);
+const emit = defineEmits(['update:content', 'cursor']);
 
 const host = ref(null);
 let view = null;
@@ -43,6 +43,11 @@ function buildExtensions() {
         applyingExternal = true;
         emit('update:content', u.state.doc.toString());
         applyingExternal = false;
+      }
+      if (u.selectionSet) {
+        const pos = u.state.selection.main.head;
+        const line = u.state.doc.lineAt(pos);
+        emit('cursor', { line: line.number, col: pos - line.from + 1 });
       }
     }),
     langCompartment.of(markdown({ codeLanguages: languages })),

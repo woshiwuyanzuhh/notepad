@@ -53,9 +53,10 @@
     </div>
 
     <!-- JSON 工具条 -->
-    <div v-if="tab && jsonInfo" id="json-toolbar">
+    <div id="json-toolbar" :class="{ open: tab && jsonInfo }">
       <span class="jt-label"><Icon name="braces" />JSON 工具</span>
       <button class="json-tool" @click="jsonFormat">格式化</button>
+      <button class="json-tool" @click="jsonMinify">压缩</button>
       <button class="json-tool" @click="jsonValidate">校验</button>
       <button class="json-tool" :class="{ on: store.jsonOpen }" @click="store.jsonOpen = !store.jsonOpen">
         树状查看
@@ -65,16 +66,32 @@
     </div>
 
     <!-- 编辑区 -->
-    <div id="editor-body" :class="store.mode">
-      <div v-if="store.mode !== 'preview'" class="cm-wrap">
+    <div v-if="tab" id="editor-body" :class="store.mode">
+      <div
+        v-if="store.mode !== 'preview'"
+        class="cm-wrap"
+        :style="cmWrapStyle"
+      >
         <EditorPane
           ref="editorPane"
           :content="tab ? tab.content : ''"
           :is-markdown="!isTxt"
           @update:content="onContent"
+          @cursor="onCursor"
         />
       </div>
-      <div v-if="store.mode !== 'edit'" id="editor-preview" class="md center">
+      <div
+        v-if="store.mode === 'split'"
+        id="split-drag"
+        :class="{ dragging: splitDragging }"
+        @mousedown="startSplitDrag"
+      ></div>
+      <div
+        v-if="store.mode !== 'edit'"
+        id="editor-preview"
+        class="md center"
+        :style="previewStyle"
+      >
         <PreviewPane :content="tab ? tab.content : ''" />
       </div>
     </div>
@@ -109,6 +126,7 @@
       <span class="sb-save" :class="store.saveState">
         <span class="dot"></span><span>{{ saveText }}</span>
       </span>
+      <span v-if="tab" id="sb-pos">{{ cursorPos }}</span>
       <div class="sb-right">
         <button v-if="isTxt" class="sb-toggle" :class="{ on: store.wrapTxt }" @click="setWrapTxt(!store.wrapTxt)">
           <span>自动换行</span>
@@ -121,19 +139,22 @@
 </template>
 
 <script setup>
-import { computed, nextTick, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import Icon from './Icon.vue';
 import EditorPane from './EditorPane.vue';
 import PreviewPane from './PreviewPane.vue';
 import JsonTree from './JsonTree.vue';
 import { store, activeTab, markDirty, createNote, closeTab, toast, setWrapTxt } from '../store.js';
-import { detectJson, formatJson, validateJson } from '../lib/json-tools.js';
+import { detectJson, formatJson, minifyJson, validateJson } from '../lib/json-tools.js';
 import { api } from '../lib/api.js';
 import { countWords } from '../lib/utils.js';
 
 const editorPane = ref(null);
 const jsonTree = ref(null);
 const jsonMsg = ref({ text: '', cls: '' });
+const cursor = ref({ line: 1, col: 1 });
+const splitRatio = ref(0.5);
+const splitDragging = ref(false);
 
 const tab = computed(() => activeTab());
 const isTxt = computed(() => {
@@ -154,11 +175,27 @@ const saveText = computed(() => {
   if (!tab.value) return '已保存';
   return store.saveState === 'saving' ? '保存中…' : '已保存';
 });
+const cursorPos = computed(() => {
+  const c = cursor.value;
+  return `行 ${c.line}, 列 ${c.col}`;
+});
+const cmWrapStyle = computed(() => {
+  if (store.mode !== 'split') return {};
+  return { width: `${splitRatio.value * 100}%`, flex: 'none' };
+});
+const previewStyle = computed(() => {
+  if (store.mode !== 'split') return {};
+  return { width: `${(1 - splitRatio.value) * 100}%`, flex: 'none' };
+});
 
 function onContent(content) {
   if (!tab.value) return;
   tab.value.content = content;
   markDirty(tab.value.path);
+}
+
+function onCursor(pos) {
+  cursor.value = pos;
 }
 
 function fmt(kind) {
@@ -216,6 +253,60 @@ function jsonValidate() {
 function treeExpandAll() { if (jsonTree.value) jsonTree.value.expandAll(); }
 function treeCollapseAll() { if (jsonTree.value) jsonTree.value.collapseAll(); }
 
+function jsonMinify() {
+  const t = tab.value;
+  if (!t || !jsonInfo.value) return;
+  const r = minifyJson(jsonInfo.value.text);
+  if (r.ok) {
+    t.content = r.text;
+    markDirty(t.path);
+    jsonMsg.value = { text: '已压缩', cls: 'ok' };
+  } else {
+    jsonMsg.value = { text: 'JSON 无效', cls: 'err' };
+  }
+}
+
+function startSplitDrag(e) {
+  if (store.mode !== 'split') return;
+  e.preventDefault();
+  splitDragging.value = true;
+  document.body.style.cursor = 'col-resize';
+  document.body.style.userSelect = 'none';
+  window.addEventListener('mousemove', moveSplitDrag);
+  window.addEventListener('mouseup', stopSplitDrag);
+}
+
+function moveSplitDrag(e) {
+  if (!splitDragging.value) return;
+  const body = document.getElementById('editor-body');
+  if (!body) return;
+  const rect = body.getBoundingClientRect();
+  let ratio = (e.clientX - rect.left) / rect.width;
+  ratio = Math.max(0.15, Math.min(0.85, ratio));
+  splitRatio.value = ratio;
+}
+
+function stopSplitDrag() {
+  splitDragging.value = false;
+  document.body.style.cursor = '';
+  document.body.style.userSelect = '';
+  window.removeEventListener('mousemove', moveSplitDrag);
+  window.removeEventListener('mouseup', stopSplitDrag);
+  try { localStorage.setItem('notepad-split-ratio', String(splitRatio.value)); } catch { /* ignore */ }
+}
+
+onMounted(() => {
+  try {
+    const saved = Number(localStorage.getItem('notepad-split-ratio'));
+    if (!Number.isNaN(saved) && saved >= 0.15 && saved <= 0.85) splitRatio.value = saved;
+  } catch { /* ignore */ }
+});
+
+onUnmounted(() => {
+  window.removeEventListener('mousemove', moveSplitDrag);
+  window.removeEventListener('mouseup', stopSplitDrag);
+});
+
 watch(
   () => store.active,
   () => { jsonMsg.value = { text: '', cls: '' }; },
@@ -236,9 +327,9 @@ watch(
 }
 #editor-body.edit .cm-wrap { width: 100%; }
 #editor-body.preview .cm-wrap { display: none; }
-#editor-body.preview #editor-preview { width: 100%; }
-#editor-body.split .cm-wrap { width: 50%; }
-#editor-body.split #editor-preview { width: 50%; border-left: 1px solid var(--border-soft); }
+#editor-body.preview #editor-preview { width: 100%; flex: none; }
+#editor-body.split .cm-wrap { flex: none; }
+#editor-body.split #editor-preview { flex: none; border-left: 1px solid var(--border-soft); }
 #editor-preview { overflow-y: auto; }
 .toolbar-hint {
   font-size: 11.5px;

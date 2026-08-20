@@ -74,6 +74,7 @@ pub struct NoteMeta {
     pub star: bool,
     pub pin: bool,
     pub mtime: u64,
+    pub ctime: u64,
     pub size: u64,
     pub excerpt: String,
     pub word_count: u64,
@@ -146,6 +147,13 @@ pub async fn list_notes() -> Result<Vec<NoteMeta>, String> {
     for file in scan_notes(&root) {
         let rel = relative_path(&root, &file);
         let md = std::fs::metadata(&file).map_err(|e| e.to_string())?;
+        // 创建时间：Windows 支持；不可用时回退修改时间
+        let ctime = md
+            .created()
+            .ok()
+            .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+            .map(|d| d.as_millis() as u64)
+            .unwrap_or_else(|| mtime_ms(&file));
         let entry = meta.notes.get(&rel);
         let content = std::fs::read(&file)
             .ok()
@@ -168,6 +176,7 @@ pub async fn list_notes() -> Result<Vec<NoteMeta>, String> {
             color: entry.and_then(|e| e.color.clone()),
             jelly: entry.and_then(|e| e.jelly),
             mtime: mtime_ms(&file),
+            ctime,
             size: md.len(),
             excerpt,
             word_count: count_words(&content),

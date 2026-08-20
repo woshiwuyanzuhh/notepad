@@ -81,7 +81,10 @@
             <Icon name="chev-r" cls="f-caret" />
             <Icon name="folder" cls="ic" />
             <span class="n-label">{{ dir.name }}</span>
-            <span class="f-badges"><span class="f-count">{{ dir.count }}</span></span>
+            <span class="f-badges">
+              <span v-if="dir.md" class="f-badge md">MD {{ dir.md }}</span>
+              <span v-if="dir.txt" class="f-badge txt">TXT {{ dir.txt }}</span>
+            </span>
           </div>
           <template v-if="store.foldersOpen.has(dir.path)">
             <div
@@ -219,10 +222,13 @@ const topDirs = computed(() => {
   for (const n of store.notes) {
     if (!n.folder) continue;
     const top = n.folder.split('/')[0];
-    if (!seen.has(top)) { seen.add(top); out.push({ name: top, path: top, count: 0 }); }
+    if (!seen.has(top)) { seen.add(top); out.push({ name: top, path: top, count: 0, md: 0, txt: 0 }); }
   }
   for (const d of out) {
-    d.count = store.notes.filter((n) => n.folder === d.path || n.folder.startsWith(d.path + '/')).length;
+    const notes = store.notes.filter((n) => n.folder === d.path || n.folder.startsWith(d.path + '/'));
+    d.count = notes.length;
+    d.md = notes.filter((n) => !n.path.toLowerCase().endsWith('.txt')).length;
+    d.txt = notes.filter((n) => n.path.toLowerCase().endsWith('.txt')).length;
   }
   return out.sort((a, b) => a.name.localeCompare(b.name, 'zh'));
 });

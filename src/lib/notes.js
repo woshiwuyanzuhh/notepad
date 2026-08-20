@@ -17,6 +17,7 @@ export function normalizeNote(raw) {
     star: Boolean(raw.star),
     pin: Boolean(raw.pin),
     mtime: Number(raw.mtime) || 0,
+    ctime: Number(raw.ctime) || Number(raw.mtime) || 0,
     size: Number(raw.size) || 0,
     excerpt: raw.excerpt || '',
   };

@@ -35,6 +35,16 @@ export function formatJson(text) {
   }
 }
 
+/** 压缩 JSON（移除空白）。@returns {ok:true,text}|{ok:false,error} */
+export function minifyJson(text) {
+  try {
+    const json = JSON.parse(text);
+    return { ok: true, text: JSON.stringify(json) };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
+
 /** 校验 JSON。@returns {ok:true}|{ok:false,error,line,col} */
 export function validateJson(text) {
   try {
