@@ -46,7 +46,7 @@ export const store = reactive({
   foldersOpen: new Set(['工作']),
 
   // 右键菜单
-  ctxMenu: { visible: false, x: 0, y: 0, path: null, panel: null }, // panel: null | 'rename' | 'tags'
+  ctxMenu: { visible: false, x: 0, y: 0, path: null, folder: null, panel: null }, // panel: null | 'rename' | 'tags'
 
   // UI 浮层
   settingsOpen: false,
@@ -396,9 +396,10 @@ export async function searchNotes(q) {
 }
 
 /* ── 右键菜单 ─────────────────────────────────────────── */
-export function openCtxMenu(e, path) {
+export function openCtxMenu(e, path, folder = null) {
   store.ctxMenu.visible = true;
   store.ctxMenu.path = path;
+  store.ctxMenu.folder = folder;
   store.ctxMenu.panel = null;
   const menuW = 230;
   const menuH = 380;
@@ -408,6 +409,7 @@ export function openCtxMenu(e, path) {
 export function closeCtxMenu() {
   store.ctxMenu.visible = false;
   store.ctxMenu.path = null;
+  store.ctxMenu.folder = null;
   store.ctxMenu.panel = null;
 }
 

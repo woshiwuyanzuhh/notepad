@@ -96,8 +96,13 @@
           </template>
 
           <template v-else>
-            <div class="menu-item" @click="onNewMd"><Icon name="file-md" cls="m-ic" /><span class="m-label">新建 Markdown 笔记</span></div>
-            <div class="menu-item" @click="onNewTxt"><Icon name="file-txt" cls="m-ic" /><span class="m-label">新建文本笔记</span></div>
+            <div class="ctx-head">{{ store.ctxMenu.folder ? `文件夹 · ${store.ctxMenu.folder}` : '' }}</div>
+            <div class="menu-item" @click="onNewMd">
+              <Icon name="file-md" cls="m-ic" /><span class="m-label">{{ store.ctxMenu.folder ? '在此文件夹新建 Markdown 笔记' : '新建 Markdown 笔记' }}</span>
+            </div>
+            <div class="menu-item" @click="onNewTxt">
+              <Icon name="file-txt" cls="m-ic" /><span class="m-label">{{ store.ctxMenu.folder ? '在此文件夹新建文本笔记' : '新建文本笔记' }}</span>
+            </div>
             <div class="menu-divider"></div>
             <div class="menu-item" @click="onRefresh"><Icon name="refresh" cls="m-ic" /><span class="m-label">刷新</span></div>
           </template>
@@ -198,12 +203,12 @@ async function onStar() { if (note.value) await toggleStar(note.value.path); clo
 async function onPin() { if (note.value) await togglePin(note.value.path); closeCtxMenu(); }
 async function onDelete() { if (note.value) await moveToTrash(note.value.path); closeCtxMenu(); }
 async function onNewMd() {
-  const folder = store.view.type === 'folder' ? store.view.key : null;
+  const folder = store.ctxMenu.folder || (store.view.type === 'folder' ? store.view.key : null);
   await createNote(folder, '新笔记', 'md');
   closeCtxMenu();
 }
 async function onNewTxt() {
-  const folder = store.view.type === 'folder' ? store.view.key : null;
+  const folder = store.ctxMenu.folder || (store.view.type === 'folder' ? store.view.key : null);
   await createNote(folder, '新笔记', 'txt');
   closeCtxMenu();
 }

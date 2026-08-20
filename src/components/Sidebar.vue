@@ -64,6 +64,7 @@
             class="folder-row"
             :class="{ open: store.foldersOpen.has(dir.path) }"
             @click="toggleFolder(dir.path)"
+            @contextmenu.prevent="openFolderCtx($event, dir.path)"
           >
             <Icon name="chev-r" cls="f-caret" />
             <Icon name="folder" cls="ic" />
@@ -88,6 +89,10 @@
             </div>
           </template>
         </template>
+        <!-- 空状态引导：根目录笔记也会显示在列表里 -->
+        <div v-if="topDirs.length === 0 && store.notes.length > 0" class="nav-empty">
+          笔记都在根目录 · 可在右键菜单中管理
+        </div>
       </div>
 
       <!-- 标签 -->
@@ -131,12 +136,17 @@
             <span class="tag-dot" :class="tagDotCls(t.name)"></span>
             <span class="n-label">{{ t.name }}</span>
             <span class="n-count">{{ t.count }}</span>
-            <span class="tag-acts">
+            <span class="t-acts">
               <button class="mini-btn" title="编辑标签" @click.stop="startTagEdit(t)"><Icon name="pen" /></button>
               <button class="mini-btn" title="删除标签" @click.stop="confirmTagDel(t)"><Icon name="trash-x" /></button>
             </span>
           </div>
         </template>
+        <!-- 空状态引导 -->
+        <div v-if="tags.length === 0 && !store.tagAddOpen" class="nav-empty">
+          暂无标签
+          <button class="nav-empty-link" @click="openTagAdd">添加标签</button>
+        </div>
       </div>
     </div>
 
@@ -209,6 +219,10 @@ function onLeafClick(e, file) {
     row.classList.add('jelly');
   }
   openNote(file.path);
+}
+
+function openFolderCtx(e, folder) {
+  openCtxMenu(e, null, folder);
 }
 
 async function openTagAdd() {

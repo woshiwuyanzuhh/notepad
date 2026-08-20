@@ -974,3 +974,38 @@ mark.hl { background: color-mix(in oklab, var(--accent) 20%, transparent); color
 .cm-host{height:100%;overflow:hidden}
 .cm-host .cm-editor{height:100%}
 #app{display:flex;flex-direction:column;height:100%}
+
+/* ─── 侧边栏空状态引导 ─────────────────────────────────── */
+.nav-empty {
+  font-size: 11.5px;
+  color: var(--muted);
+  padding: 6px 10px;
+  line-height: 1.6;
+  white-space: normal;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.nav-empty-link {
+  font-size: 11.5px;
+  color: var(--accent);
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: color-mix(in oklab, var(--accent) 10%, transparent);
+}
+.nav-empty-link:hover {
+  background: color-mix(in oklab, var(--accent) 18%, transparent);
+}
+
+/* ─── 标签操作常显（可发现性优先） ─────────────────────── */
+.tag-row .t-acts {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+  opacity: 0.75;
+}
+.tag-row:hover .t-acts { opacity: 1; }
+.tag-row .t-acts .mini-btn { width: 19px; height: 19px; border-radius: 5px; }
+.tag-row .t-acts .mini-btn .ic { width: 12px; height: 12px; }
