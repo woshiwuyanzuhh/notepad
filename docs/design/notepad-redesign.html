@@ -869,6 +869,70 @@ mark.hl { background: color-mix(in oklab, var(--accent) 20%, transparent); color
 /* 右下角字数：小号灰字 + 等宽数字 */
 .sb-words { font-variant-numeric: tabular-nums; color: var(--muted); }
 
+/* ═══════════════════════════════════════════════════════════════════
+   v4：果冻修复 / 文件夹文件树 / 重命名与标签 / 标签栏编辑
+   ═══════════════════════════════════════════════════════════════════ */
+/* 文件夹树文件行：点击果冻 + 类型徽章 + 置顶标记 */
+.leaf-row.jelly { animation: jelly 450ms cubic-bezier(0.28, 0, 0.22, 1); }
+.leaf-row .leaf-pin { display: flex; align-items: center; flex: none; }
+.leaf-row .leaf-pin .ic { width: 11px; height: 11px; color: var(--amber); }
+
+/* 标签区标题行 + 添加按钮 */
+.nav-group-label.tags-label { display: flex; align-items: center; padding-right: 12px; }
+.tag-add-btn {
+  width: 18px; height: 18px; border-radius: 5px; margin-left: auto;
+  display: flex; align-items: center; justify-content: center; color: var(--muted);
+  transition: background var(--motion-fast), color var(--motion-fast);
+}
+.tag-add-btn:hover { background: var(--tint-2); color: var(--fg); }
+.tag-add-btn .ic { width: 12px; height: 12px; }
+.tag-add-row { display: flex; align-items: center; gap: 4px; padding: 1px 10px 7px; }
+.tag-add-row input, .tag-edit-row input {
+  flex: 1; min-width: 0; height: 24px; padding: 0 7px; font-size: 12.5px;
+  border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--fg);
+}
+.tag-add-row input:focus-visible, .tag-edit-row input:focus-visible { border-color: var(--accent); box-shadow: var(--focus-ring); }
+
+/* 标签行 hover 操作（编辑 / 删除） */
+.tag-row .t-acts { display: none; align-items: center; gap: 2px; flex: none; }
+.tag-row:hover .t-acts { display: flex; }
+.tag-row:hover .n-count { display: none; }
+.tag-row .t-acts .mini-btn { width: 19px; height: 19px; border-radius: 5px; }
+.tag-row .t-acts .mini-btn .ic { width: 12px; height: 12px; }
+.tag-edit-row { gap: 4px; padding: 0 8px; }
+.tag-confirm-row { gap: 4px; padding: 0 8px; font-size: 12px; color: var(--fg-2); }
+.tag-confirm-row .tc-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tag-confirm-row .tc-yes { color: var(--danger); font-weight: 600; padding: 3px 7px; border-radius: 6px; }
+.tag-confirm-row .tc-yes:hover { background: color-mix(in oklab, var(--danger) 12%, transparent); }
+.tag-confirm-row .tc-no { color: var(--muted); padding: 3px 7px; border-radius: 6px; }
+.tag-confirm-row .tc-no:hover { background: var(--tint-2); color: var(--fg); }
+
+/* 右键菜单内联面板：重新命名 / 设置标签（复用 .menu 浮层语言） */
+.ctx-rename-row { padding: 2px 10px 4px; }
+.ctx-input {
+  width: 100%; height: 28px; padding: 0 9px; font-size: 13px;
+  border: 1px solid var(--border); border-radius: 7px; background: var(--bg); color: var(--fg);
+}
+.ctx-input:focus-visible { border-color: var(--accent); box-shadow: var(--focus-ring); }
+.ctx-hint { font-size: 10.5px; color: var(--meta); padding: 2px 10px 9px; }
+.ctx-tags { display: flex; flex-wrap: wrap; gap: 6px; padding: 2px 10px 9px; max-height: 170px; overflow-y: auto; }
+.ctx-tag {
+  display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px;
+  border-radius: 999px; font-size: 12px; color: var(--fg-2); background: var(--tint-1);
+  border: 1px solid transparent;
+  transition: background var(--motion-fast) var(--ease-standard), border-color var(--motion-fast) var(--ease-standard), color var(--motion-fast);
+}
+.ctx-tag:hover { background: var(--tint-2); color: var(--fg); }
+.ctx-tag .tag-dot { width: 7px; height: 7px; }
+.ctx-tag .ic { width: 12px; height: 12px; color: var(--accent); }
+.ctx-tag.on {
+  background: color-mix(in oklab, var(--accent) 12%, transparent);
+  border-color: color-mix(in oklab, var(--accent) 35%, transparent);
+  color: var(--fg); font-weight: 600;
+}
+.ctx-newtag { display: flex; align-items: center; gap: 7px; padding: 0 10px 10px; }
+.ctx-newtag .ic { width: 13px; height: 13px; color: var(--muted); flex: none; }
+
 /* ─── 响应式（桌面应用降级） ──────────────────────────────────────── */
 @media (max-width: 1180px) {
   #listpane { width: 290px; }
@@ -1002,7 +1066,7 @@ mark.hl { background: color-mix(in oklab, var(--accent) 20%, transparent); color
         </div>
         <div class="nav-group-label" data-od-id="nav-folders">文件夹</div>
         <div id="folder-tree"></div>
-        <div class="nav-group-label" data-od-id="nav-tags">标签</div>
+        <div class="nav-group-label tags-label" data-od-id="nav-tags"><span>标签</span><button class="tag-add-btn tip" data-action="tag-add-open" data-tip="添加标签" aria-label="添加标签"><svg class="ic"><use href="#i-plus"/></svg></button></div>
         <div id="tag-list"></div>
       </div>
       <div class="sidebar-foot">
@@ -1541,6 +1605,81 @@ const VAULTS = [
 const TAG_COLOR = { 工作: 'blue', 会议: 'indigo', 项目: 'cyan', 重要: 'red', 灵感: 'orange', 学习: 'green', 数学: 'purple', 编程: 'teal', 阅读: 'pink', 日记: 'yellow' };
 const TAG_COLOR_FALLBACK = { teal: 'green', yellow: 'orange' };
 
+/* ─── v4 标签注册表（按库维护：支持零引用标签与增删改，持久化） ────── */
+const TAG_COLOR_POOL = ['blue', 'indigo', 'cyan', 'red', 'orange', 'green', 'purple', 'pink', 'yellow'];
+let _tagColorIdx = 0;
+let TAG_REGISTRY = store.get('tagRegistry', null) || {};
+VAULTS.forEach(v => {
+  if (!Array.isArray(TAG_REGISTRY[v.id])) {
+    TAG_REGISTRY[v.id] = [...new Set(NOTES.filter(n => n.vault === v.id).flatMap(n => n.tags))];
+  }
+});
+const _storedTagColors = store.get('tagColors', null);
+if (_storedTagColors && typeof _storedTagColors === 'object') Object.assign(TAG_COLOR, _storedTagColors);
+function persistTags() {
+  store.set('tagRegistry', TAG_REGISTRY);
+  store.set('tagColors', TAG_COLOR);
+}
+function vaultTagList(vid) {
+  const counts = {};
+  vaultNotes(vid).filter(n => !n.trashed).forEach(n => n.tags.forEach(t => { counts[t] = (counts[t] || 0) + 1; }));
+  const reg = TAG_REGISTRY[vid] || [];
+  const all = [...new Set([...reg, ...Object.keys(counts)])];
+  return all.map(t => ({ tag: t, count: counts[t] || 0 }))
+    .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag, 'zh'));
+}
+function ensureTag(name) {
+  const reg = TAG_REGISTRY[state.vaultId] || (TAG_REGISTRY[state.vaultId] = []);
+  if (!reg.includes(name)) reg.push(name);
+  if (!TAG_COLOR[name]) { TAG_COLOR[name] = TAG_COLOR_POOL[_tagColorIdx++ % TAG_COLOR_POOL.length]; }
+  persistTags();
+}
+function renameTag(oldName, newName) {
+  const reg = TAG_REGISTRY[state.vaultId] || (TAG_REGISTRY[state.vaultId] = []);
+  NOTES.forEach(n => {
+    if (n.vault === state.vaultId && n.tags.includes(oldName)) {
+      n.tags = n.tags.filter(x => x !== oldName);
+      if (!n.tags.includes(newName)) n.tags.push(newName);
+    }
+  });
+  const ri = reg.indexOf(oldName);
+  if (ri >= 0) reg.splice(ri, 1);
+  if (!reg.includes(newName)) reg.push(newName);
+  const color = TAG_COLOR[oldName];
+  if (color) { delete TAG_COLOR[oldName]; if (!TAG_COLOR[newName]) TAG_COLOR[newName] = color; }
+  persistTags();
+  if (state.view.type === 'tag' && state.view.key === oldName) state.view = { type: 'all', key: null };
+}
+function deleteTag(tag) {
+  let cnt = 0;
+  NOTES.forEach(n => {
+    if (n.vault === state.vaultId && n.tags.includes(tag)) { n.tags = n.tags.filter(x => x !== tag); cnt++; }
+  });
+  const reg = TAG_REGISTRY[state.vaultId];
+  if (reg) { const ri = reg.indexOf(tag); if (ri >= 0) reg.splice(ri, 1); }
+  delete TAG_COLOR[tag];
+  persistTags();
+  if (state.view.type === 'tag' && state.view.key === tag) state.view = { type: 'all', key: null };
+  return cnt;
+}
+/* v4 标签栏内联输入辅助（添加 / 编辑，Enter/Esc 由全局键盘委托处理） */
+function focusTagAdd() {
+  const inp = el('tag-add-input');
+  if (inp) inp.focus();
+}
+function commitTagEdit() {
+  const inp = el('tag-edit-input');
+  const old = state.tagEdit;
+  state.tagEdit = null;
+  if (!inp) { renderSidebar(); return; }
+  const name = inp.value.trim();
+  if (!name || name === old) { renderSidebar(); return; }
+  renameTag(old, name);
+  renderSidebar();
+  renderList();
+  toast('已重命名标签「' + old + '」→「' + name + '」', false);
+}
+
 /* ═══════════════════════════════════════════════════════════════════
    应用状态
    ═══════════════════════════════════════════════════════════════════ */
@@ -1558,7 +1697,10 @@ const state = {
   settings: Object.assign({ font: 'mono', size: 14, wrap: true }, store.get('settings', {})),
   settingsTab: 'appearance',
   dirty: {},                                 // noteId -> true
-  treeOpen: false
+  treeOpen: false,
+  tagEdit: null,                             // v4 标签内联编辑（标签名）
+  tagDel: null,                              // v4 标签删除确认（标签名）
+  tagAdd: false                              // v4 标签添加输入行
 };
 const el = (id) => document.getElementById(id);
 const $$ = (sel, root) => Array.from((root || document).querySelectorAll(sel));
@@ -1833,12 +1975,14 @@ function renderSidebar() {
       '</span></button>';
     if (open) {
       list.slice().sort((a, b) => b.modified - a.modified).forEach(n => {
-        fh += '<button class="nav-row leaf-row tip" data-action="leaf-open" data-note="' + n.id + '" data-tip="' + esc(n.title) + '">' +
+        const isActive = state.activeTab === n.id;
+        fh += '<button class="nav-row leaf-row tip' + (isActive ? ' sel' : '') + '" data-action="leaf-open" data-note="' + n.id + '" data-tip="' + esc(n.title) + '" data-od-id="tree-note-' + n.id + '">' +
           (n.type === 'md'
             ? '<svg class="ic" style="color:var(--accent)"><use href="#i-file-md"/></svg>'
             : '<svg class="ic" style="color:var(--green)"><use href="#i-file-txt"/></svg>') +
           '<span class="n-label">' + esc(n.title) + '</span>' +
-          (n.pinned ? icon('pin') : '') +
+          '<span class="f-badge ' + n.type + '">' + n.type.toUpperCase() + '</span>' +
+          (n.pinned ? '<span class="leaf-pin">' + icon('pin') + '</span>' : '') +
           '</button>';
       });
     }
@@ -1846,20 +1990,44 @@ function renderSidebar() {
   });
   el('folder-tree').innerHTML = fh;
 
-  const tagCounts = {};
-  notes.filter(n => !n.trashed).forEach(n => n.tags.forEach(t => { tagCounts[t] = (tagCounts[t] || 0) + 1; }));
+  const tagListData = vaultTagList(state.vaultId);
   const tState = store.get('tagsOpen', true);
   let th = '';
-  const tagEntries = Object.entries(tagCounts).sort((a, b) => b[1] - a[1]);
-  const shown = tState ? tagEntries : tagEntries.slice(0, 4);
-  shown.forEach(([t, c]) => {
-    const isSel = state.view.type === 'tag' && state.view.key === t && !state.query;
-    th += '<button class="nav-row tag-row' + (isSel ? ' sel' : '') + '" data-action="tag-select" data-tag="' + t + '" data-od-id="tag-row-' + t + '">' +
-      '<span class="tag-dot ' + tagDotCls(t) + '"></span>' +
-      '<span class="n-label">' + esc(t) + '</span><span class="n-count">' + c + '</span></button>';
+  if (state.tagAdd) {
+    th += '<div class="tag-add-row">' +
+      '<input id="tag-add-input" type="text" placeholder="新标签名，回车创建" aria-label="新标签名">' +
+      '<button class="mini-btn" data-action="tag-add-cancel" aria-label="取消">' + icon('x') + '</button>' +
+      '</div>';
+  }
+  const shown = tState ? tagListData : tagListData.slice(0, 4);
+  shown.forEach(td => {
+    const t = td.tag;
+    if (state.tagEdit === t) {
+      th += '<div class="nav-row tag-edit-row">' +
+        '<input id="tag-edit-input" type="text" value="' + esc(t) + '" aria-label="重命名标签">' +
+        '<button class="mini-btn" data-action="tag-edit-confirm" aria-label="确认">' + icon('check') + '</button>' +
+        '<button class="mini-btn" data-action="tag-edit-cancel" aria-label="取消">' + icon('x') + '</button>' +
+        '</div>';
+    } else if (state.tagDel === t) {
+      th += '<div class="nav-row tag-confirm-row">' +
+        '<span class="tc-label">删除「' + esc(t) + '」？</span>' +
+        '<button class="tc-yes" data-action="tag-delete-confirm" data-tag="' + t + '">删除</button>' +
+        '<button class="tc-no" data-action="tag-delete-cancel">取消</button>' +
+        '</div>';
+    } else {
+      const isSel = state.view.type === 'tag' && state.view.key === t && !state.query;
+      th += '<div class="nav-row tag-row' + (isSel ? ' sel' : '') + '" data-action="tag-select" data-tag="' + t + '" data-od-id="tag-row-' + t + '" role="button">' +
+        '<span class="tag-dot ' + tagDotCls(t) + '"></span>' +
+        '<span class="n-label">' + esc(t) + '</span>' +
+        '<span class="n-count">' + td.count + '</span>' +
+        '<span class="t-acts">' +
+        '<button class="mini-btn" data-action="tag-edit-open" data-tag="' + t + '" title="重命名" aria-label="重命名标签">' + icon('pen') + '</button>' +
+        '<button class="mini-btn" data-action="tag-delete-open" data-tag="' + t + '" title="删除标签" aria-label="删除标签">' + icon('x') + '</button>' +
+        '</span></div>';
+    }
   });
-  if (!tState && tagEntries.length > 4) th += '<button class="nav-row tag-row" data-action="tags-more"><span class="n-label" style="color:var(--muted)">展开全部 ' + tagEntries.length + ' 个标签</span></button>';
-  else if (tState && tagEntries.length > 4) th += '<button class="nav-row tag-row" data-action="tags-less"><span class="n-label" style="color:var(--muted)">收起</span></button>';
+  if (!tState && tagListData.length > 4) th += '<button class="nav-row tag-row" data-action="tags-more"><span class="n-label" style="color:var(--muted)">展开全部 ' + tagListData.length + ' 个标签</span></button>';
+  else if (tState && tagListData.length > 4) th += '<button class="nav-row tag-row" data-action="tags-less"><span class="n-label" style="color:var(--muted)">收起</span></button>';
   el('tag-list').innerHTML = th;
 }
 
@@ -2334,7 +2502,8 @@ const PALETTE = [['red', '淡红'], ['orange', '橙'], ['yellow', '黄'], ['gree
 function updateCtxDots(m, n) {
   $$('.ctx-dot', m).forEach(d => d.classList.toggle('sel', (d.dataset.key || 'clear') === (n.color || 'clear')));
 }
-function openCardCtx(n, x, y) {
+/* ─── v4 笔记菜单（卡片 + 文件夹树文件条目共用） ──────────────────── */
+function openNoteCtxMenu(n, x, y) {
   closeCtx();
   const m = document.createElement('div');
   m.className = 'menu ctx-menu';
@@ -2343,6 +2512,15 @@ function openCardCtx(n, x, y) {
   head.textContent = n.title;
   head.title = n.title;
   m.appendChild(head);
+  if (n.trashed) {
+    m.appendChild(menuItem(icon('restore'), '恢复', () => { closeCtx(); restoreNote(n.id); }));
+    m.appendChild(menuItem(icon('trash-x'), '彻底删除', () => { closeCtx(); purgeNote(n.id); }, true));
+    showCtx(m, x, y);
+    return;
+  }
+  m.appendChild(menuItem(icon('pen'), '重新命名', () => showRenamePanel(m, n)));
+  m.appendChild(menuItem(icon('tag'), '设置标签', () => showTagPanel(m, n)));
+  m.appendChild(dividerEl());
   const lab = document.createElement('div');
   lab.className = 'menu-title';
   lab.textContent = '卡片颜色';
@@ -2367,7 +2545,6 @@ function openCardCtx(n, x, y) {
   clear.addEventListener('click', () => { n.color = null; renderList(); updateCtxDots(m, n); });
   row.appendChild(clear);
   m.appendChild(row);
-  m.appendChild(dividerEl());
   const jr = document.createElement('div');
   jr.className = 'ctx-row';
   jr.innerHTML = icon('jelly') + '<span class="m-label">果冻动画</span>';
@@ -2384,17 +2561,109 @@ function openCardCtx(n, x, y) {
   jr.appendChild(sw);
   m.appendChild(jr);
   m.appendChild(dividerEl());
-  if (n.trashed) {
-    m.appendChild(menuItem(icon('restore'), '恢复', () => { closeCtx(); restoreNote(n.id); }));
-    m.appendChild(menuItem(icon('trash-x'), '彻底删除', () => { closeCtx(); purgeNote(n.id); }, true));
-  } else {
-    const starItem = menuItem(icon(n.starred ? 'star-f' : 'star'), n.starred ? '取消收藏' : '收藏', () => { closeCtx(); toggleStar(n.id); });
-    if (n.starred) { const sic = starItem.querySelector('.m-ic svg'); if (sic) sic.style.color = 'var(--amber)'; }
-    m.appendChild(starItem);
-    m.appendChild(menuItem(icon('pin'), n.pinned ? '取消置顶' : '置顶', () => { closeCtx(); togglePin(n.id); }));
-    m.appendChild(menuItem(icon('trash'), '删除', () => { closeCtx(); deleteNote(n.id); }, true));
-  }
+  const starItem = menuItem(icon(n.starred ? 'star-f' : 'star'), n.starred ? '取消收藏' : '收藏', () => { closeCtx(); toggleStar(n.id); });
+  if (n.starred) { const sic = starItem.querySelector('.m-ic svg'); if (sic) sic.style.color = 'var(--amber)'; }
+  m.appendChild(starItem);
+  m.appendChild(menuItem(icon('pin'), n.pinned ? '取消置顶' : '置顶', () => { closeCtx(); togglePin(n.id); }));
+  m.appendChild(menuItem(icon('trash'), '删除', () => { closeCtx(); deleteNote(n.id); }, true));
   showCtx(m, x, y);
+}
+/* ─── v4 重新命名：菜单内联输入，回车确认 / Esc 取消 ─────────────── */
+function baseName(title) { return title.replace(/\.(md|txt)$/i, ''); }
+function uniqueTitle(vaultId, base) {
+  const lower = base.toLowerCase();
+  const taken = new Set(NOTES.filter(x => x.vault === vaultId).map(x => x.title.toLowerCase()));
+  if (!taken.has(lower)) return base;
+  let i = 2;
+  while (taken.has((base + ' (' + i + ')').toLowerCase())) i++;
+  return base + ' (' + i + ')';
+}
+function doRename(n, raw) {
+  const name = (raw || '').trim().replace(/\.(md|txt)$/i, '');
+  if (!name || name === n.title) return;
+  n.title = uniqueTitle(n.vault, name);
+  n.modified = now;
+  renderSidebar();
+  renderList();
+  renderTabs();
+  toast('已重命名为「' + n.title + '」', false);
+}
+function showRenamePanel(m, n) {
+  m.innerHTML = '';
+  const head = document.createElement('div');
+  head.className = 'ctx-head';
+  head.textContent = '重新命名';
+  const row = document.createElement('div');
+  row.className = 'ctx-rename-row';
+  const input = document.createElement('input');
+  input.className = 'ctx-input';
+  input.value = baseName(n.title);
+  input.setAttribute('aria-label', '新的文件名');
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); closeCtx(); doRename(n, input.value); }
+  });
+  row.appendChild(input);
+  const hint = document.createElement('div');
+  hint.className = 'ctx-hint';
+  hint.textContent = '回车确认 · Esc 取消';
+  m.appendChild(head);
+  m.appendChild(row);
+  m.appendChild(hint);
+  requestAnimationFrame(() => { input.focus(); input.select(); });
+}
+/* ─── v4 设置标签：勾选切换 + 新建即时应用 ───────────────────────── */
+function addTagToNote(n, name) {
+  if (!name) return;
+  ensureTag(name);
+  if (!n.tags.includes(name)) n.tags.push(name);
+}
+function showTagPanel(m, n) {
+  m.innerHTML = '';
+  const head = document.createElement('div');
+  head.className = 'ctx-head';
+  head.textContent = '设置标签';
+  m.appendChild(head);
+  const wrap = document.createElement('div');
+  wrap.className = 'ctx-tags';
+  vaultTagList(state.vaultId).forEach(td => {
+    const on = n.tags.includes(td.tag);
+    const chip = document.createElement('button');
+    chip.className = 'ctx-tag' + (on ? ' on' : '');
+    chip.innerHTML = '<span class="tag-dot ' + tagDotCls(td.tag) + '"></span>' + esc(td.tag) + (on ? icon('check') : '');
+    chip.title = on ? '点击移除标签' : '点击添加标签';
+    chip.addEventListener('click', () => {
+      if (n.tags.includes(td.tag)) n.tags = n.tags.filter(x => x !== td.tag);
+      else n.tags.push(td.tag);
+      renderSidebar();
+      renderList();
+      showTagPanel(m, n);
+    });
+    wrap.appendChild(chip);
+  });
+  m.appendChild(wrap);
+  const newRow = document.createElement('div');
+  newRow.className = 'ctx-newtag';
+  newRow.innerHTML = icon('plus');
+  const input = document.createElement('input');
+  input.className = 'ctx-input';
+  input.placeholder = '新标签，回车创建并应用';
+  input.setAttribute('aria-label', '新标签名');
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const name = input.value.trim();
+      if (!name) return;
+      addTagToNote(n, name);
+      input.value = '';
+      renderSidebar();
+      renderList();
+      showTagPanel(m, n);
+      toast('已创建标签「' + name + '」', false);
+    }
+  });
+  newRow.appendChild(input);
+  m.appendChild(newRow);
+  requestAnimationFrame(() => input.focus());
 }
 function openBlankCtx(x, y) {
   closeCtx();
@@ -2406,7 +2675,7 @@ function openBlankCtx(x, y) {
   m.appendChild(menuItem(icon('refresh'), '刷新', () => { closeCtx(); renderList(); toast('列表已刷新', false); }));
   showCtx(m, x, y);
 }
-/* 右键：仅笔记列表区弹自定义菜单，其余区域无反应 */
+/* 右键：笔记列表卡片 / 文件夹树文件条目弹菜单，其余区域无反应 */
 document.addEventListener('contextmenu', (e) => {
   const t = e.target;
   const inUi = !!t.closest('#app') || !!t.closest('.menu');
@@ -2414,11 +2683,16 @@ document.addEventListener('contextmenu', (e) => {
   e.preventDefault();
   closeMenu();
   closeCtx();
+  const leaf = t.closest('#folder-tree .leaf-row[data-note]');
+  if (leaf && leaf.dataset.note) {
+    const n = noteById(leaf.dataset.note);
+    if (n) { openNoteCtxMenu(n, e.clientX, e.clientY); return; }
+  }
   if (!t.closest('#listpane')) return;
   const card = t.closest('#note-list .card');
   if (card && card.dataset.note) {
     const n = noteById(card.dataset.note);
-    if (n) openCardCtx(n, e.clientX, e.clientY);
+    if (n) openNoteCtxMenu(n, e.clientX, e.clientY);
   } else {
     openBlankCtx(e.clientX, e.clientY);
   }
@@ -2524,9 +2798,17 @@ function openNote(id, focus) {
   store.set('tabs', state.tabs);
   store.set('active', id);
   renderTabs();
-  renderList();
+  syncCardSelection();
+  syncSidebarActive();
   renderEditor();
   if (focus) el('editor-area').focus();
+}
+/* v4：选中态轻量同步——只切换 class，不重建卡片 DOM，保证果冻动画可见 */
+function syncCardSelection() {
+  $$('#note-list .card[data-note]').forEach(c => c.classList.toggle('sel', c.dataset.note === state.activeTab));
+}
+function syncSidebarActive() {
+  $$('#folder-tree .leaf-row[data-note]').forEach(r => r.classList.toggle('sel', r.dataset.note === state.activeTab));
 }
 
 function closeTab(id) {
@@ -2672,8 +2954,9 @@ function closeSettings() { el('settings-modal').classList.remove('open'); }
    事件
    ═══════════════════════════════════════════════════════════════════ */
 document.addEventListener('click', (e) => {
-  if (!menuEl) { /* noop */ }
-  if (menuEl && !menuEl.contains(e.target) && !e.target.closest('[data-action="vault-menu"]') && !e.target.closest('[data-action="new-note-menu"]') && !e.target.closest('[data-action="sort-menu"]')) closeMenu();
+  const inDrop = menuEl && menuEl.contains(e.target);
+  const inCtx = ctxEl && ctxEl.contains(e.target);
+  if (!inDrop && !inCtx && (menuEl || ctxEl)) closeMenu();
   const el2 = e.target.closest('[data-action]');
   if (!el2) return;
   const a = el2.dataset.action;
@@ -2732,10 +3015,36 @@ document.addEventListener('click', (e) => {
       state.view = { type: 'folder', key: f };
       renderSidebar(); renderList();
     },
-    'leaf-open'() { openNote(el2.dataset.note, false); },
+    'leaf-open'() {
+      const id = el2.dataset.note;
+      const n = noteById(id);
+      if (n && n.jelly !== false) jellyPop(el2);
+      openNote(id, false);
+    },
     'tag-select'() { state.view = { type: 'tag', key: el2.dataset.tag }; renderSidebar(); renderList(); },
     'tags-more'() { store.set('tagsOpen', true); renderSidebar(); },
     'tags-less'() { store.set('tagsOpen', false); renderSidebar(); },
+    /* v4 标签栏：添加 / 编辑 / 删除 */
+    'tag-add-open'() { state.tagAdd = true; state.tagEdit = null; state.tagDel = null; renderSidebar(); focusTagAdd(); },
+    'tag-add-cancel'() { state.tagAdd = false; renderSidebar(); },
+    'tag-edit-open'() {
+      state.tagEdit = el2.dataset.tag; state.tagDel = null; state.tagAdd = false;
+      renderSidebar();
+      const inp = el('tag-edit-input');
+      if (inp) { inp.focus(); inp.select(); }
+    },
+    'tag-edit-confirm'() { commitTagEdit(); },
+    'tag-edit-cancel'() { state.tagEdit = null; renderSidebar(); },
+    'tag-delete-open'() { state.tagDel = el2.dataset.tag; state.tagEdit = null; state.tagAdd = false; renderSidebar(); },
+    'tag-delete-confirm'() {
+      const tag = el2.dataset.tag;
+      const cnt = deleteTag(tag);
+      state.tagDel = null;
+      renderSidebar();
+      renderList();
+      toast('已删除标签「' + tag + '」' + (cnt ? '，并从 ' + cnt + ' 篇笔记移除' : ''), false);
+    },
+    'tag-delete-cancel'() { state.tagDel = null; renderSidebar(); },
     'rail-toggle'() {
       state.rail = !state.rail;
       store.set('rail', state.rail);
@@ -2987,7 +3296,24 @@ document.addEventListener('keydown', (e) => {
     }
     return;
   }
+  if (e.key === 'Enter' && document.activeElement === el('tag-add-input')) {
+    e.preventDefault();
+    const name = el('tag-add-input').value.trim();
+    if (!name) { state.tagAdd = false; renderSidebar(); return; }   // 空标签自动跳过
+    ensureTag(name);
+    state.tagAdd = false;
+    renderSidebar();
+    toast('已创建标签「' + name + '」', false);
+    return;
+  }
+  if (e.key === 'Enter' && document.activeElement === el('tag-edit-input')) {
+    e.preventDefault();
+    commitTagEdit();
+    return;
+  }
   if (e.key === 'Escape') {
+    if (document.activeElement === el('tag-edit-input')) { state.tagEdit = null; renderSidebar(); return; }
+    if (document.activeElement === el('tag-add-input')) { state.tagAdd = false; renderSidebar(); return; }
     if (ctxEl) { closeCtx(); return; }
     if (menuEl) { closeMenu(); return; }
     if (el('json-drawer').classList.contains('open')) { state.treeOpen = false; el('json-drawer').classList.remove('open'); el('json-tree-btn').classList.remove('active'); return; }
