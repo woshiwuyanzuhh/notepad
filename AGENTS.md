@@ -78,6 +78,9 @@ docs/
 14. **预览区链接点击导致应用内导航（已修）**：`PreviewPane` 现在拦截所有 `<a>` 点击，阻止默认行为；外部链接复制到剪贴板并提示，锚点链接平滑滚动。
 15. **会话恢复单点失败阻断全部（已修）**：`restoreSession()` 中对每个 tab 的 `openNote()` 单独 try-catch，避免一个文件损坏导致整个会话无法恢复。
 16. **切换工作目录后文件夹树显示异常（已修）**：`switchDataDir()` 未重置 `store.foldersOpen`，旧库的展开/折叠状态会带到新库，导致新库文件夹默认折叠、看起来像没显示。切换目录时现在会清空 `foldersOpen`。
+17. **文件夹行缺少 flex 布局导致错位/点不到（已修）**：`.folder-row` 原只设了 `padding-left`，没有 `display: flex`，caret/图标/名称/徽章错位甚至换行。已补全 flex 行布局、hover 状态和 caret 旋转。
+18. **排序下拉点击没反应（已修）**：`#list-header` 不是 `position: relative`，`.sort-menu` 绝对定位基准错误，菜单被定位到屏幕外。已给 header 加 `position: relative`。
+19. **网格视图只显示一列（已修）**：`#note-list.grid` 的 `grid-template-columns: 1fr 1fr` 在内容较宽时可能折叠成一列，已改为 `repeat(2, minmax(0, 1fr))` 并给 `.card` 加 `min-width: 0`。
 
 ## 五、遗留问题 / 下一步
 
