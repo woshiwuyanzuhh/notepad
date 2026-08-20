@@ -86,9 +86,9 @@
             <span class="tag-dot" :class="tagDotCls(t)"></span>{{ t }}
           </span>
         </div>
-        <div class="card-sum">{{ n.excerpt }}</div>
+        <div class="card-ex">{{ n.excerpt }}</div>
         <div class="card-foot">
-          <span class="card-meta">{{ relTime(n.mtime) }} · {{ n.word_count }} 字</span>
+          <span>{{ relTime(n.mtime) }} · {{ n.word_count }} 字</span>
           <span class="flex-spacer"></span>
           <span class="hover-acts">
             <button class="mini-btn" title="删除" @click.stop="moveToTrash(n.path)"><Icon name="trash" /></button>

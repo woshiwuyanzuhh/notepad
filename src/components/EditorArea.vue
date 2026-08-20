@@ -7,13 +7,14 @@
           v-for="t in store.tabs"
           :key="t.path"
           class="tab"
-          :class="{ on: store.active === t.path }"
+          :class="{ sel: store.active === t.path }"
           @click="store.active = t.path"
           @auxclick.middle="closeTab(t.path)"
         >
-          <span v-if="t.dirty" class="tab-dot"></span>
-          <span class="tab-title">{{ t.title }}</span>
-          <button class="tab-x" @click.stop="closeTab(t.path)"><Icon name="x" /></button>
+          <Icon :name="t.path.toLowerCase().endsWith('.txt') ? 'file-txt' : 'file-md'" :cls="t.path.toLowerCase().endsWith('.txt') ? 't-type txt' : 't-type md'" />
+          <span class="t-name">{{ t.title }}</span>
+          <span v-if="t.dirty" class="t-dot" title="未保存"></span>
+          <button class="t-close" aria-label="关闭标签页" @click.stop="closeTab(t.path)"><Icon name="x" /></button>
         </div>
       </div>
       <button class="tab-new tip" data-tip="新建笔记" aria-label="新建笔记" @click="onNewNote">

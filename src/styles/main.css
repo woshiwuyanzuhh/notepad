@@ -1009,3 +1009,96 @@ mark.hl { background: color-mix(in oklab, var(--accent) 20%, transparent); color
 .tag-row:hover .t-acts { opacity: 1; }
 .tag-row .t-acts .mini-btn { width: 19px; height: 19px; border-radius: 5px; }
 .tag-row .t-acts .mini-btn .ic { width: 12px; height: 12px; }
+
+/* ═══════════════════════════════════════════════════════════════
+   补全样式：预览排版 / 代码高亮 / JSON 树 / 回收站 / 小类
+   （设计稿 v6 缺失，从 v1 苹果文稿风格迁移，适配 v6 tokens）
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─── Markdown 预览排版（苹果文稿风格） ─────────────────────── */
+#editor-preview .preview{font-size:15px;line-height:1.75;color:var(--fg);overflow-wrap:break-word;max-width:780px;margin:0 auto}
+#editor-preview .preview h1{font:600 26px/1.3 var(--font-display);letter-spacing:-.015em;margin:30px 0 12px}
+#editor-preview .preview h2{font:600 21px/1.35 var(--font-display);letter-spacing:-.01em;margin:28px 0 10px}
+#editor-preview .preview h3{font:600 18px/1.4 var(--font-display);letter-spacing:-.005em;margin:22px 0 8px}
+#editor-preview .preview h1:first-child,#editor-preview .preview h2:first-child{margin-top:2px}
+#editor-preview .preview p{margin:10px 0}
+#editor-preview .preview ul,#editor-preview .preview ol{margin:12px 0;padding-left:24px;display:grid;gap:6px}
+#editor-preview .preview li::marker{color:var(--meta)}
+#editor-preview .preview blockquote{margin:16px 0;padding:3px 0 3px 16px;border-left:3px solid color-mix(in oklab,var(--accent) 55%,var(--meta));color:var(--muted)}
+#editor-preview .preview blockquote p{margin:6px 0}
+#editor-preview .preview code{font:13px/1.5 var(--font-mono);background:var(--tint-1);padding:2px 6px;border-radius:5px}
+#editor-preview .preview a{color:var(--accent);text-decoration:none}
+#editor-preview .preview a:hover{text-decoration:underline}
+#editor-preview .preview img{max-width:100%;border-radius:10px;margin:8px 0}
+#editor-preview .preview table{border-collapse:collapse;margin:16px 0;width:100%;font-size:14px}
+#editor-preview .preview th,#editor-preview .preview td{border:1px solid var(--border-soft);padding:8px 12px;text-align:left}
+#editor-preview .preview th{background:var(--surface);font-weight:600}
+#editor-preview .preview tr:hover td{background:var(--tint-1)}
+#editor-preview .preview hr{border:none;border-top:1px solid var(--border);margin:24px 0}
+#editor-preview .preview ul.tasklist{list-style:none;padding-left:2px}
+#editor-preview .preview .task-item{display:flex;align-items:flex-start;gap:8px}
+#editor-preview .preview .task-check{width:15px;height:15px;accent-color:var(--accent);flex:none;margin-top:4px}
+#editor-preview .preview .task-item:has(.task-check:checked){color:var(--muted);text-decoration:line-through}
+
+/* ─── 代码块 ─────────────────────────────────────────────── */
+.codeblock{margin:16px 0;border-radius:12px;background:oklch(.216 .017 259);box-shadow:0 6px 18px rgba(0,0,0,.18);overflow:hidden}
+.cb-head{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:oklch(.26 .017 259)}
+.cb-lang{font:600 11px/1 var(--font-mono);color:oklch(.72 .03 259);letter-spacing:.06em;text-transform:lowercase}
+.cb-copy{display:flex;align-items:center;gap:5px;font-size:12px;color:oklch(.76 .03 259);padding:4px 9px;border-radius:6px}
+.cb-copy:hover{background:rgba(255,255,255,.1);color:oklch(1 0 0)}
+.cb-copy svg{width:12px;height:12px}
+.codeblock pre{margin:0}
+.codeblock code{display:block;padding:14px 16px;overflow:auto;font:13px/1.7 var(--font-mono);color:oklch(.72 .015 265);white-space:pre}
+.tok-kw{color:oklch(.68 .19 316)}
+.tok-str{color:oklch(.77 .13 142)}
+.tok-num{color:oklch(.74 .11 74)}
+.tok-com{color:oklch(.63 .02 260);font-style:italic}
+.tok-fn{color:oklch(.74 .10 240)}
+.tok-tag{color:oklch(.68 .15 16)}
+.tok-attr{color:oklch(.74 .11 74)}
+.tok-key{color:oklch(.74 .10 240)}
+
+/* ─── JSON 树状视图（嵌套树） ─────────────────────────────── */
+.jtree{font:13px/1.85 var(--font-mono);padding:14px 18px 40px;color:var(--fg);max-width:900px;margin:0 auto}
+.jt-node{display:inline}
+.jt-row{display:inline-flex;align-items:center;gap:5px;cursor:default}
+.jt-caret{width:18px;height:18px;display:inline-grid;place-items:center;border-radius:5px;color:var(--meta);flex:none;vertical-align:-4px}
+.jt-caret:hover{background:var(--tint-1);color:var(--fg)}
+.jt-caret.closed svg{transform:rotate(-90deg)}
+.jt-children{display:block;padding-left:21px;border-left:1px dashed color-mix(in oklab,var(--fg) 12%,transparent);margin-left:8px}
+.jt-children.closed{display:none}
+.jt-entry{white-space:nowrap}
+.jt-key{color:var(--accent)}
+.jt-idx{color:var(--meta)}
+.jt-punct{color:var(--meta)}
+.jt-bracket{color:var(--meta)}
+.jt-hint{font-family:var(--font-body);font-size:11px;color:var(--meta);margin-left:2px}
+.jt-str{color:oklch(.50 .13 152)}
+.jt-num{color:oklch(.52 .16 55)}
+.jt-bool{color:oklch(.47 .17 316)}
+.jt-null{color:var(--muted);font-style:italic}
+
+/* ─── 回收站 ─────────────────────────────────────────────── */
+.trash-list{padding:2px 12px 16px;display:flex;flex-direction:column;gap:6px;overflow-y:auto}
+.trash-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:var(--bg);border:1px solid var(--border-soft)}
+.trash-row:hover{border-color:var(--border);box-shadow:0 4px 14px rgba(0,0,0,.06)}
+.trash-ic{width:15px;height:15px;color:var(--muted);flex:none}
+.trash-name{font-size:13.5px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trash-orig{font-size:11px;color:var(--meta);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trash-acts{display:flex;gap:2px;flex:none}
+.trash-empty{padding:30px;text-align:center;color:var(--meta);font-size:13px}
+
+/* ─── 小类补全 ───────────────────────────────────────────── */
+.f-count{font-size:10.5px;color:var(--meta);background:var(--tint-1);padding:1px 6px;border-radius:99px;font-variant-numeric:tabular-nums}
+.tag-input{flex:1;min-width:0;font:inherit;font-size:12.5px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:3px 8px;color:var(--fg);outline:none}
+.tag-input:focus{border-color:var(--accent)}
+.sort-menu{position:absolute;top:100%;left:12px;z-index:120}
+.sort-chev{width:11px;height:11px;color:var(--meta)}
+.side-vault-menu{position:absolute;top:40px;left:8px;z-index:200}
+.nav-empty{font-size:11.5px;color:var(--muted);padding:6px 10px;line-height:1.6;display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.nav-empty-link{font-size:11.5px;color:var(--accent);padding:2px 6px;border-radius:5px;background:color-mix(in oklab,var(--accent) 10%,transparent)}
+.tag-row .t-acts{display:flex;align-items:center;gap:2px;flex:none;opacity:.75}
+.tag-row:hover .t-acts{opacity:1}
+.tag-row .t-acts .mini-btn{width:19px;height:19px;border-radius:5px}
+.tag-row .t-acts .mini-btn .ic{width:12px;height:12px}
+.cm-wrap{flex:1;min-width:0;min-height:0;height:100%}
