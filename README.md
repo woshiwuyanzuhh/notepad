@@ -1,7 +1,90 @@
-# Tauri + Vue 3
+# 📝 记事本 (Notepad)
 
-This template should help get you started developing with Tauri + Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+一个**本地优先的个人桌面记事本**，苹果设计风格。基于 **Tauri 2 + Vue 3** 构建，所有笔记都是普通的 Markdown / 文本文件，存放在你选择的文件夹中——数据完全由你掌控，无云端、无账号。
 
-## Recommended IDE Setup
+## ✨ 功能特性
 
-- [VS Code](https://code.visualstudio.com/) + [Vue - Official](https://marketplace.visualstudio.com/items?itemName=Vue.volar) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+### 核心
+- 📂 **纯文件存储**：每篇笔记一个 `.md` 或 `.txt` 文件，随时可用任何编辑器打开
+- 📑 **多标签页**：同时编辑多篇笔记，未保存标记 ●，中键/按钮关闭
+- 💾 **自动保存**：停止输入 1 秒后自动写入，绿色圆点确认已保存
+- 🔍 **全文搜索**：标题/正文/标签实时过滤，命中高亮
+- 🗑️ **回收站**：删除可恢复，支持彻底删除
+- ⚡ **秒开轻量**：Rust 原生后端 + WebView2 渲染，内存占用低
+
+### 编辑体验
+- ✏️ **CodeMirror 6 编辑器**：代码块自动缩进，Markdown 语法高亮
+- 👁️ **编辑 / 预览 / 分栏** 三模式切换
+- 🎨 **5 种语言语法高亮**：Python / JavaScript / JSON / HTML / Shell
+- 📐 **LaTeX 公式**：KaTeX 渲染 `$x^2$` 行内与 `$$\frac{1}{2}$$` 块级公式
+- 🖼️ **本地图片插入**：选择图片自动复制到数据目录 `assets/`，预览即时显示
+- ✅ **任务列表**：`- [x]` 勾选框渲染
+- 🔤 **字体设置**：枚举本机全部字体，编辑器字体/字号可调（txt 专属）
+- 📄 **txt 自动换行**开关（默认关闭，长行水平滚动）
+
+### 工具与整理
+- 🧮 **JSON 工具**：自动检测 → 格式化 / 校验（行列定位）/ 树状查看（键值配色）
+- 🏷️ **文件夹 / 标签 / 星标 / 置顶**整理体系
+- 🌗 **浅色 / 深色双主题**（苹果蓝 #0071e3 单一强调色）
+- 🧘 **纯净编辑模式**：隐藏侧栏专注写作（Esc 退出）
+- 🪟 **无边框窗口**：自定义标题栏，Windows 风格窗口控制（右上角）
+
+### 健壮性
+- 🛡️ **外部修改冲突检测**：文件被其他编辑器修改时提示"覆盖 / 重新加载"
+- ⌨️ 快捷键：`Ctrl+N` 新建 · `Ctrl+S` 保存 · `Ctrl+W` 关闭标签 · `Ctrl+Tab` 切换 · `Esc` 退出纯净模式
+- 🗺️ 路径安全：所有文件操作严格限定在数据目录内
+
+## 🖥️ 技术栈
+
+| 层 | 技术 |
+|---|---|
+| 界面 | Vue 3 · Vite · CodeMirror 6 · markdown-it · highlight.js · KaTeX |
+| 后端 | Rust · Tauri 2 · serde/serde_json · winreg（字体枚举） |
+| 打包 | NSIS 安装程序（约 2.6 MB） |
+
+## 🚀 安装与使用
+
+1. 从 [Releases](https://github.com/woshiwuyanzuhh/notepad/releases) 下载 `记事本_x.x.x_x64-setup.exe` 安装
+2. 首次启动选择笔记文件夹（可指向已有 `.md` / `.txt` 文件的目录）
+3. 开始记录！所有笔记就是普通文件，随时可用其他编辑器打开
+
+## 🛠️ 开发
+
+环境要求：Node.js 22+ · pnpm · Rust（stable-msvc）
+
+```bash
+pnpm install
+pnpm tauri dev      # 开发模式（热更新）
+pnpm test           # 前端测试（Vitest）
+cargo test          # 后端测试（src-tauri 目录下）
+pnpm tauri build    # 打包 NSIS 安装程序
+```
+
+## 📁 目录结构
+
+```
+├── src/                  # 前端（Vue 3）
+│   ├── components/       # 界面组件（标题栏/侧栏/编辑器/JSON 树…）
+│   ├── lib/              # 纯逻辑（markdown/JSON/搜索/工具函数）
+│   ├── styles/           # 设计令牌与全局样式（苹果风格，浅/深主题）
+│   └── store.js          # 全局状态与动作
+├── src-tauri/            # 后端（Rust）
+│   ├── src/              # commands（文件/元数据/回收站/搜索/图片/字体）
+│   └── tests/            # Rust 集成测试
+└── docs/                 # 设计稿原型 · 实施计划 · 冒烟测试清单
+```
+
+## 📜 数据格式
+
+```
+笔记文件夹/
+├── 我的笔记.md           ← 每篇笔记一个文件
+├── 随手记.txt            ← 支持纯文本
+├── assets/               ← 插入的图片
+└── .notebook-meta.json   ← 隐藏元数据（星标/置顶/标签）
+    .trash/               ← 回收站
+```
+
+## 📄 License
+
+个人项目，仅供学习与自用。
