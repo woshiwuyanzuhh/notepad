@@ -115,9 +115,41 @@
               <option v-for="s in [12, 13, 14, 15, 16, 18, 20, 24]" :key="s" :value="s">{{ s }} px</option>
             </select>
           </div>
-          <div class="po-row" @click="onChooseDir">
-            <span>笔记文件夹</span>
-            <span class="po-meta dir-name" :title="store.dataDir">{{ dirLabel }}</span>
+          <div class="po-title">工作目录</div>
+          <div class="po-dirs">
+            <div
+              v-for="d in store.dataDirs"
+              :key="d"
+              class="po-dir"
+              :class="{ active: d === store.dataDir }"
+            >
+              <span class="dir-icon" :class="{ on: d === store.dataDir }">
+                <Icon v-if="d === store.dataDir" name="check" />
+              </span>
+              <span class="dir-name" :title="d">{{ shortDir(d) }}</span>
+              <span v-if="d === store.dataDir" class="po-meta">当前</span>
+              <span v-else class="po-meta">已添加</span>
+              <button
+                v-if="d !== store.dataDir"
+                type="button"
+                class="dir-act"
+                title="切换到此目录"
+                @click="switchDir(d)"
+              >
+                <Icon name="chevronR" />
+              </button>
+              <button
+                type="button"
+                class="dir-act danger"
+                title="移除"
+                @click="removeDir(d)"
+              >
+                <Icon name="x" />
+              </button>
+            </div>
+            <button type="button" class="po-row po-add" @click="onChooseDir">
+              <Icon name="plus" />添加新文件夹
+            </button>
           </div>
           <div class="po-note">所有笔记仅保存在本地 Markdown / 文本文件中，不会上传到云端。</div>
           <div class="po-row"><span>关于记事本</span><span class="po-meta">v0.1.0</span></div>
@@ -143,7 +175,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import Icon from './Icon.vue';
-import { store, toggleTheme, applyTheme, createNote, searchNotes, toast, setFontFamily, setFontSize } from '../store.js';
+import { store, toggleTheme, applyTheme, createNote, searchNotes, toast, setFontFamily, setFontSize, switchDataDir, removeDataDir } from '../store.js';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { debounce } from '../lib/utils.js';
@@ -165,10 +197,30 @@ const newPop = ref(false);
 
 const dirLabel = computed(() => {
   if (!store.dataDir) return '未设置';
-  const d = store.dataDir.replace(/\\/g, '/');
-  const parts = d.split('/');
-  return parts.length > 3 ? '…/' + parts.slice(-2).join('/') : d;
+  return shortDir(store.dataDir);
 });
+
+function shortDir(d) {
+  const s = String(d).replace(/\\/g, '/');
+  const parts = s.split('/');
+  return parts.length > 3 ? '…/' + parts.slice(-2).join('/') : s;
+}
+
+async function switchDir(d) {
+  try {
+    await switchDataDir(d);
+  } catch (e) {
+    toast('切换失败：' + e);
+  }
+}
+
+async function removeDir(d) {
+  try {
+    await removeDataDir(d);
+  } catch (e) {
+    toast('移除失败：' + e);
+  }
+}
 
 const onSearchInput = debounce(() => {
   searchNotes(store.q);
@@ -250,5 +302,82 @@ async function onChooseDir() {
 }
 .po-select:focus {
   border-color: var(--accent);
+}
+.po-dirs {
+  display: grid;
+  gap: 2px;
+  padding: 2px;
+}
+.po-dir {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  color: var(--fg-2);
+}
+.po-dir:hover {
+  background: color-mix(in oklab, var(--fg) 5%, transparent);
+}
+.po-dir.active {
+  background: color-mix(in oklab, var(--accent) 10%, transparent);
+  color: var(--fg);
+}
+.dir-icon {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.dir-icon.on {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-on);
+}
+.dir-icon svg {
+  width: 9px;
+  height: 9px;
+}
+.po-dir .dir-name {
+  flex: 1;
+  min-width: 0;
+}
+.dir-act {
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  display: grid;
+  place-items: center;
+  color: var(--meta);
+  flex: none;
+  transition: background-color var(--motion-fast), color var(--motion-fast);
+}
+.dir-act:hover {
+  background: color-mix(in oklab, var(--fg) 10%, transparent);
+  color: var(--fg);
+}
+.dir-act.danger:hover {
+  background: #e81123;
+  color: #fff;
+}
+.dir-act svg {
+  width: 11px;
+  height: 11px;
+}
+.po-add {
+  justify-content: flex-start;
+  gap: 8px;
+  color: var(--accent);
+  margin-top: 2px;
+  border: 1px dashed var(--border);
+  width: 100%;
+}
+.po-add svg {
+  width: 13px;
+  height: 13px;
 }
 </style>

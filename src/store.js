@@ -9,6 +9,7 @@ export const store = reactive({
   ready: false,
   onboarded: false,
   dataDir: null,
+  dataDirs: [],
 
   notes: [],
   trash: [],
@@ -121,6 +122,7 @@ export async function init() {
     const cfg = await api.getConfig();
     if (cfg && cfg.data_dir) {
       store.dataDir = cfg.data_dir;
+      store.dataDirs = Array.isArray(cfg.data_dirs) && cfg.data_dirs.length ? cfg.data_dirs : [cfg.data_dir];
       store.onboarded = true;
       await refreshNotes();
     } else {
@@ -136,11 +138,51 @@ export async function init() {
 export async function completeOnboarding(dir) {
   await api.setDataDir(dir);
   store.dataDir = dir;
+  if (!store.dataDirs.includes(dir)) store.dataDirs.push(dir);
   store.onboarded = true;
   await refreshNotes();
   if (store.notes.length === 0) {
     await createNote('', '欢迎使用记事本');
   }
+}
+
+/** 切换工作目录 */
+export async function switchDataDir(dir) {
+  if (dir === store.dataDir) return;
+  await api.setDataDir(dir);
+  store.dataDir = dir;
+  if (!store.dataDirs.includes(dir)) store.dataDirs.push(dir);
+  closeAllTabs();
+  store.q = '';
+  store.filter = { kind: 'all', value: null };
+  await refreshNotes();
+  toast('已切换到：' + dir);
+}
+
+/** 从列表移除工作目录（当前目录被移除时后端自动切换） */
+export async function removeDataDir(dir) {
+  if (store.dataDirs.length <= 1) {
+    toast('至少保留一个工作目录');
+    return;
+  }
+  const wasActive = dir === store.dataDir;
+  await api.removeDataDir(dir);
+  store.dataDirs = store.dataDirs.filter((d) => d !== dir);
+  if (wasActive) {
+    const cfg = await api.getConfig();
+    store.dataDir = cfg.data_dir || null;
+    closeAllTabs();
+    await refreshNotes();
+    toast('已移除并切换');
+  } else {
+    toast('已移除工作目录');
+  }
+}
+
+function closeAllTabs() {
+  store.tabs = [];
+  store.active = null;
+  store.jsonOpen = false;
 }
 
 /* ── 笔记列表 ─────────────────────────────────────────── */

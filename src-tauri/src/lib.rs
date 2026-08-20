@@ -13,6 +13,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::get_config,
             commands::set_data_dir,
+            commands::remove_data_dir,
             commands::list_notes,
             commands::read_note,
             commands::write_note,

@@ -38,6 +38,7 @@
           <div class="card-title" v-html="markHit(n.title, store.q)"></div>
           <div class="card-sum" v-html="markHit(n.excerpt, store.q)"></div>
           <div class="card-meta">
+            <span class="type-badge" :class="isTxt(n) ? 'txt' : 'md'">{{ isTxt(n) ? 'TXT' : 'MD' }}</span>
             <span>{{ relTime(n.mtime) }}</span>
             <span class="card-flags">
               <span v-if="n.pin" class="mini-btn on-pin"><Icon name="pin" /></span>
@@ -104,6 +105,10 @@ const listCount = computed(() => {
   if (store.filter.kind === 'trash') return store.trash.length;
   return `${visible.value.length} 篇`;
 });
+
+function isTxt(n) {
+  return n.path.toLowerCase().endsWith('.txt');
+}
 
 async function onDelete(path) {
   await moveToTrash(path);

@@ -5,6 +5,7 @@ import { invoke } from '@tauri-apps/api/core';
 export const api = {
   getConfig: () => invoke('get_config'),
   setDataDir: (path) => invoke('set_data_dir', { path }),
+  removeDataDir: (path) => invoke('remove_data_dir', { path }),
 
   listNotes: () => invoke('list_notes'),
   readNote: (path) => invoke('read_note', { path }),

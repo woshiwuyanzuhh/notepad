@@ -6,7 +6,7 @@ use crate::meta::{
     trash_records, MetaFile,
 };
 use crate::search::{search_dir, SearchHit};
-use crate::store::{ensure_data_dir, load_config, save_config, Config};
+use crate::store::{ensure_data_dir, load_config, remove_dir, save_config};
 use serde::Serialize;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -62,6 +62,7 @@ fn unique_path(dir: &Path, stem: &str, ext: &str) -> PathBuf {
 #[derive(Serialize)]
 pub struct AppConfig {
     pub data_dir: Option<String>,
+    pub data_dirs: Vec<String>,
 }
 
 #[derive(Serialize)]
@@ -92,19 +93,33 @@ pub struct TrashEntryView {
 
 #[tauri::command]
 pub async fn get_config() -> Result<AppConfig, String> {
+    let cfg = load_config();
     Ok(AppConfig {
-        data_dir: load_config().data_dir,
+        data_dir: cfg.data_dir.clone(),
+        data_dirs: cfg.data_dirs.clone(),
     })
 }
 
+/// 添加并切换到工作目录（加入列表 + 设为当前）。
 #[tauri::command]
 pub async fn set_data_dir(path: String) -> Result<(), String> {
     let dir = PathBuf::from(&path);
     ensure_data_dir(&dir)?;
-    save_config(&Config {
-        data_dir: Some(path),
-    })?;
-    Ok(())
+    let mut cfg = load_config();
+    cfg.data_dir = Some(path.clone());
+    if !cfg.data_dirs.contains(&path) {
+        cfg.data_dirs.push(path);
+    }
+    cfg.normalize();
+    save_config(&cfg)
+}
+
+/// 从工作目录列表移除；若移除的是当前目录则切换到列表第一个。
+#[tauri::command]
+pub async fn remove_data_dir(path: String) -> Result<(), String> {
+    let mut cfg = load_config();
+    remove_dir(&mut cfg, &path);
+    save_config(&cfg)
 }
 
 #[tauri::command]
@@ -419,7 +434,7 @@ pub async fn list_fonts() -> Result<Vec<String>, String> {
 // 供测试复用：内部状态清理
 #[allow(dead_code)]
 pub fn _reset_config() {
-    let _ = save_config(&Config { data_dir: None });
+    let _ = save_config(&crate::store::Config::default());
 }
 
 // 保持 MetaFile 类型可见（测试引用）

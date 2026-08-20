@@ -625,3 +625,9 @@ html[data-theme="dark"] .seg-indi{box-shadow:0 1px 4px rgba(0,0,0,.5)}
 .preview .task-item:has(.task-check:checked){color:var(--muted);text-decoration:line-through;text-decoration-color:color-mix(in oklab,var(--fg) 35%,transparent)}
 .preview .task-check{width:15px;height:15px;accent-color:var(--accent);flex:none;margin-top:4px}
 .preview .task-item:has(.task-check:checked) .task-check{accent-color:var(--meta)}
+
+/* ─── 文件类型徽章 ─────────────────────────────────────── */
+.type-badge{font-size:10px;font-weight:600;letter-spacing:.04em;padding:1px 6px;border-radius:5px;flex:none;font-variant-numeric:tabular-nums}
+.type-badge.md{background:color-mix(in oklab,var(--accent) 14%,transparent);color:var(--accent)}
+.type-badge.txt{background:color-mix(in oklab,oklch(.62 .14 152) 16%,transparent);color:oklch(.52 .12 152)}
+html[data-theme="dark"] .type-badge.txt{color:oklch(.70 .14 152)}
