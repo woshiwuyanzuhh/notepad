@@ -326,10 +326,18 @@ kbd {
 .nav-row.sel .ic { color: var(--accent); }
 .nav-row.sel .n-count { color: var(--fg-2); }
 [data-theme="dark"] .nav-row.sel .ic { color: var(--accent-bright); }
-.folder-row { padding-left: 6px; }
+.folder-row {
+  display: flex; align-items: center; gap: 8px;
+  height: 30px; margin: 0 8px 1px; padding: 0 9px 0 6px;
+  border-radius: 8px; font-size: 13px; color: var(--fg);
+  width: calc(100% - 16px);
+  transition: background var(--motion-fast) var(--ease-standard);
+}
+.folder-row:hover { background: var(--tint-1); }
 .folder-row .f-caret { width: 14px; height: 14px; color: var(--meta); transition: transform var(--motion-fast) var(--ease-standard); flex: none; }
-.folder-row .f-caret.open { transform: rotate(90deg); }
+.folder-row.open .f-caret { transform: rotate(90deg); }
 .folder-row .ic { width: 14px; height: 14px; }
+.folder-row .n-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
 .folder-row .f-badges { display: flex; gap: 4px; flex: none; }
 .f-badge {
   font-size: 10px; font-weight: 700; letter-spacing: .02em; padding: 1px 4px; border-radius: 4px;
