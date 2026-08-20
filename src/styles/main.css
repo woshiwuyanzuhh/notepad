@@ -504,6 +504,7 @@ mark.hl { background: color-mix(in oklab, var(--accent) 20%, transparent); color
   height: 38px; flex: none; display: flex; align-items: center; gap: 2px; padding: 0 8px;
   border-bottom: 1px solid var(--border-soft); background: var(--bg);
 }
+#fmt-group { display: flex; align-items: center; gap: 2px; }
 .tool-btn {
   width: 27px; height: 27px; border-radius: 7px; display: flex; align-items: center; justify-content: center;
   color: var(--fg-2); transition: background var(--motion-fast), color var(--motion-fast);
