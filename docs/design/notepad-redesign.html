@@ -795,6 +795,80 @@ mark.hl { background: color-mix(in oklab, var(--accent) 20%, transparent); color
 #app.clean #sidebar, #app.clean #listpane { display: none; }
 #app.clean .tb-clean { background: var(--sel-bg); color: var(--accent); }
 
+/* ═══════════════════════════════════════════════════════════════════
+   v3：卡片颜色 / 果冻动画 / 右键菜单 / 右下角字数
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  /* 柔和卡片色板（低饱和 oklch，双主题通用） */
+  --c-red: oklch(0.74 0.11 22);
+  --c-orange: oklch(0.79 0.12 62);
+  --c-yellow: oklch(0.85 0.12 92);
+  --c-green: oklch(0.79 0.12 152);
+  --c-blue: oklch(0.73 0.11 252);
+  --c-purple: oklch(0.69 0.12 302);
+  --c-pink: oklch(0.75 0.12 352);
+}
+/* 卡片着色：所选颜色 ~28% 混入卡片底，文字色不变；选中蓝描边与颜色共存 */
+.card[data-color] { background: color-mix(in oklab, var(--card-c) 28%, var(--bg)); }
+.card[data-color]:hover { background: color-mix(in oklab, var(--card-c) 35%, var(--bg)); }
+.card.sel[data-color] { background: color-mix(in oklab, var(--card-c) 26%, var(--sel-bg)); }
+.card.sel[data-color]:hover { background: color-mix(in oklab, var(--card-c) 32%, var(--sel-bg)); }
+
+/* 果冻点击动画：1 → .96 → 1.03 → .985 → 1，~0.45s */
+@keyframes jelly {
+  0% { transform: scale(1); }
+  30% { transform: scale(0.96); }
+  55% { transform: scale(1.03); }
+  75% { transform: scale(0.985); }
+  100% { transform: scale(1); }
+}
+.card.jelly { animation: jelly 450ms cubic-bezier(0.28, 0, 0.22, 1); }
+
+/* 右键菜单（复用 .menu 浮层语言：12px 圆角 / 1px 边框 / 大阴影 / 150ms popIn） */
+.ctx-menu { width: 220px; }
+.ctx-head {
+  font-size: 12.5px; color: var(--muted); padding: 8px 10px 7px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  border-bottom: 1px solid var(--border-soft); margin-bottom: 4px;
+}
+.ctx-colors { display: flex; align-items: center; gap: 8px; padding: 2px 10px 8px; }
+.ctx-dot {
+  width: 18px; height: 18px; border-radius: 50%; position: relative; flex: none;
+  transition: transform var(--motion-fast) var(--ease-standard), box-shadow var(--motion-fast);
+}
+.ctx-dot:hover { transform: scale(1.18); }
+.ctx-dot.sel { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent); }
+.ctx-dot.clear { background: color-mix(in srgb, var(--fg) 7%, transparent); border: 1px solid var(--border); }
+.ctx-dot.clear::after {
+  content: ''; position: absolute; left: 4px; right: 4px; top: 50%; height: 1.5px;
+  background: var(--muted); border-radius: 2px; transform: rotate(-45deg);
+}
+.ctx-row {
+  display: flex; align-items: center; gap: 9px; height: 32px; padding: 0 9px;
+  border-radius: 7px; font-size: 13px; color: var(--fg);
+  transition: background var(--motion-fast) var(--ease-standard);
+}
+.ctx-row:hover { background: var(--tint-1); }
+.ctx-row .ic { width: 15px; height: 15px; color: var(--muted); }
+.ctx-row .switch { margin-left: auto; }
+/* iOS 风格滑动开关 */
+.switch {
+  position: relative; width: 38px; height: 23px; border-radius: 999px; flex: none;
+  background: color-mix(in srgb, var(--fg) 22%, transparent);
+  transition: background var(--motion-base) var(--ease-standard);
+}
+.switch::after {
+  content: ''; position: absolute; top: 2px; left: 2px; width: 19px; height: 19px;
+  border-radius: 50%; background: var(--accent-on); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform var(--motion-base) var(--ease-standard);
+}
+.switch.on { background: var(--accent); }
+.switch.on::after { transform: translateX(15px); }
+.menu-item.danger:hover { background: color-mix(in oklab, var(--danger) 11%, transparent); color: var(--danger); }
+
+/* 右下角字数：小号灰字 + 等宽数字 */
+.sb-words { font-variant-numeric: tabular-nums; color: var(--muted); }
+
 /* ─── 响应式（桌面应用降级） ──────────────────────────────────────── */
 @media (max-width: 1180px) {
   #listpane { width: 290px; }
@@ -861,6 +935,8 @@ mark.hl { background: color-mix(in oklab, var(--accent) 20%, transparent); color
     <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5.5" y="10.5" width="13" height="9" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></symbol>
     <symbol id="i-mono" viewBox="0 0 24 24"><path d="M4 7h4M16 7h4M12 5.5v13M9 18.5h6"/></symbol>
     <symbol id="i-trash-all" viewBox="0 0 24 24"><path d="M4.5 7h15M9.5 7V5.5A1.5 1.5 0 0 1 11 4h2a1.5 1.5 0 0 1 1.5 1.5V7M6.5 7l1 12a1.5 1.5 0 0 0 1.5 1.4h6a1.5 1.5 0 0 0 1.5-1.4l1-12M9.5 11v5.5M14.5 11v5.5"/></symbol>
+    <symbol id="i-jelly" viewBox="0 0 24 24"><path d="M12 4c4 0 6.5 2.8 6.5 6 0 2.6-1.6 4.8-4 5.8L13 19.5l-2.4-3.2c-3-.8-5.1-3.2-5.1-6.3C5.5 6.8 8 4 12 4z"/><path d="M8.2 8.8h7.6M8.2 12h3.8"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 3.5V8h-4.5"/></symbol>
   </defs>
 </svg>
 
@@ -1014,11 +1090,11 @@ mark.hl { background: color-mix(in oklab, var(--accent) 20%, transparent); color
       </div>
       <div id="statusbar" data-od-id="statusbar">
         <span class="sb-save saved" id="sb-save"><span class="dot"></span><span id="sb-save-text">已保存</span></span>
-        <span id="sb-words">0 字</span>
         <div class="sb-right">
           <button class="sb-toggle" id="sb-wrap" data-action="wrap-toggle" hidden><span id="sb-wrap-label">自动换行</span></button>
           <span id="sb-pos">行 1，列 1</span>
           <span class="sb-lang" id="sb-lang">Markdown</span>
+          <span class="sb-words" id="sb-words-num" hidden>0 字</span>
         </div>
       </div>
     </section>
@@ -1100,7 +1176,7 @@ const T = (m) => now - m;
 const NOTES = [
   /* —— 工作库 —— */
   { id: 'n1', vault: 'v1', folder: '会议记录', title: 'Q3 产品评审会议纪要', type: 'md',
-    tags: ['会议', '工作'], starred: true, pinned: true, created: T(6 * DAY), modified: T(25 * MIN),
+    tags: ['会议', '工作'], starred: true, pinned: true, color: 'blue', created: T(6 * DAY), modified: T(25 * MIN),
     content: `# Q3 产品评审会议纪要
 
 **时间**：2025-01-14 10:00 · **参会**：产品、设计、研发共 12 人
@@ -1158,7 +1234,7 @@ const NOTES = [
 - 定价策略（6 月再议）` },
 
   { id: 'n4', vault: 'v1', folder: '项目文档', title: 'API 对接文档', type: 'md',
-    tags: ['项目', '工作'], starred: true, pinned: false, created: T(12 * DAY), modified: T(2 * HOUR),
+    tags: ['项目', '工作'], starred: true, pinned: false, jelly: false, created: T(12 * DAY), modified: T(2 * HOUR),
     content: `# API 对接文档
 
 ## 1. 认证
@@ -1271,7 +1347,7 @@ ssh deploy@server "cd /srv/notes-app && ./rollback.sh"
 }` },
 
   { id: 'n8', vault: 'v1', folder: '未分类', title: '待办清单', type: 'md',
-    tags: ['重要'], starred: false, pinned: true, created: T(15 * DAY), modified: T(4 * HOUR),
+    tags: ['重要'], starred: false, pinned: true, color: 'yellow', created: T(15 * DAY), modified: T(4 * HOUR),
     content: `# 待办清单
 
 ## 本周
@@ -1302,7 +1378,7 @@ ssh deploy@server "cd /srv/notes-app && ./rollback.sh"
 
   /* —— 学习库 —— */
   { id: 'n10', vault: 'v2', folder: '数学', title: '线性代数复习笔记', type: 'md',
-    tags: ['学习', '数学'], starred: true, pinned: false, created: T(14 * DAY), modified: T(8 * HOUR),
+    tags: ['学习', '数学'], starred: true, pinned: false, color: 'purple', created: T(14 * DAY), modified: T(8 * HOUR),
     content: `# 线性代数复习笔记
 
 ## 特征值与特征向量
@@ -1811,7 +1887,8 @@ function noteCardHtml(n) {
   const more = n.tags.length > 2 ? '<span class="card-tag">+' + (n.tags.length - 2) + '</span>' : '';
   const starCls = n.starred ? 'on' : '';
   const starIcn = n.starred ? 'star-f' : 'star';
-  return '<div class="card' + (state.activeTab === n.id ? ' sel' : '') + '" data-action="card-select" data-note="' + n.id + '" data-od-id="note-card-' + n.id + '" tabindex="0">' +
+  const colAttr = n.color ? ' data-color="' + n.color + '" style="--card-c:var(--c-' + n.color + ')"' : '';
+  return '<div class="card' + (state.activeTab === n.id ? ' sel' : '') + '"' + colAttr + ' data-action="card-select" data-note="' + n.id + '" data-od-id="note-card-' + n.id + '" tabindex="0">' +
     '<div class="card-head">' +
     '<span class="badge ' + n.type + '">' + n.type.toUpperCase() + '</span>' +
     '<span class="card-tags">' + tags + more + '</span>' +
@@ -1830,7 +1907,8 @@ function noteCardHtml(n) {
 }
 
 function trashCardHtml(n) {
-  return '<div class="card" data-od-id="note-card-' + n.id + '">' +
+  const colAttr = n.color ? ' data-color="' + n.color + '" style="--card-c:var(--c-' + n.color + ')"' : '';
+  return '<div class="card"' + colAttr + ' data-note="' + n.id + '" data-od-id="note-card-' + n.id + '">' +
     '<div class="card-head">' +
     '<span class="badge ' + n.type + '">' + n.type.toUpperCase() + '</span>' +
     '<span class="flex-spacer"></span>' +
@@ -1955,7 +2033,7 @@ function renderEditor() {
     el('json-toolbar').classList.remove('open');
     el('sb-save').className = 'sb-save saved';
     el('sb-save-text').textContent = '已保存';
-    el('sb-words').textContent = '0 字';
+    el('sb-words-num').hidden = true;
     el('sb-pos').textContent = '';
     el('sb-lang').textContent = '';
     el('sb-wrap').hidden = true;
@@ -2000,7 +2078,8 @@ function updateGutter() {
 function updateStatusMeta() {
   const n = activeNote();
   if (!n) return;
-  el('sb-words').textContent = wordCount(n.content) + ' 字';
+  el('sb-words-num').hidden = false;
+  el('sb-words-num').textContent = wordCount(n.content) + ' 字';
   const ta = el('editor-area');
   const upto = ta.value.slice(0, ta.selectionStart);
   const line = upto.split('\n').length;
@@ -2179,7 +2258,9 @@ function renderSettings() {
 
 /* ─── 菜单 ───────────────────────────────────────────────────────── */
 let menuEl = null;
+let ctxEl = null;
 function closeMenu() {
+  if (ctxEl) { closeCtx(); }
   if (menuEl) { menuEl.classList.remove('open'); setTimeout(() => menuEl.remove(), 180); menuEl = null; }
   el('vault-switcher').setAttribute('aria-expanded', 'false');
   el('btn-new').setAttribute('aria-expanded', 'false');
@@ -2219,6 +2300,138 @@ function openMenu(anchor, items) {
   if (r.bottom + m.offsetHeight + 8 > window.innerHeight) m.style.top = Math.max(8, r.top - m.offsetHeight - 6) + 'px';
   requestAnimationFrame(() => m.classList.add('open'));
   menuEl = m;
+}
+
+/* ─── v3 右键菜单（笔记列表） ────────────────────────────────────── */
+function dividerEl() {
+  const d = document.createElement('div');
+  d.className = 'menu-divider';
+  return d;
+}
+function menuItem(ic, label, action, danger) {
+  const b = document.createElement('button');
+  b.className = 'menu-item' + (danger ? ' danger' : '');
+  b.innerHTML = '<span class="m-ic">' + ic + '</span><span class="m-label">' + esc(label) + '</span>';
+  b.addEventListener('click', () => action && action());
+  return b;
+}
+function showCtx(m, x, y) {
+  m.dataset.odId = 'ctx-menu';
+  document.body.appendChild(m);
+  const r = m.getBoundingClientRect();
+  let left = x, top = y;
+  if (left + r.width > window.innerWidth - 8) left = Math.max(8, window.innerWidth - r.width - 8);
+  if (top + r.height > window.innerHeight - 8) top = Math.max(8, window.innerHeight - r.height - 8);
+  m.style.left = left + 'px';
+  m.style.top = top + 'px';
+  requestAnimationFrame(() => m.classList.add('open'));
+  ctxEl = m;
+}
+function closeCtx() {
+  if (ctxEl) { ctxEl.remove(); ctxEl = null; }
+}
+const PALETTE = [['red', '淡红'], ['orange', '橙'], ['yellow', '黄'], ['green', '绿'], ['blue', '蓝'], ['purple', '紫'], ['pink', '粉']];
+function updateCtxDots(m, n) {
+  $$('.ctx-dot', m).forEach(d => d.classList.toggle('sel', (d.dataset.key || 'clear') === (n.color || 'clear')));
+}
+function openCardCtx(n, x, y) {
+  closeCtx();
+  const m = document.createElement('div');
+  m.className = 'menu ctx-menu';
+  const head = document.createElement('div');
+  head.className = 'ctx-head';
+  head.textContent = n.title;
+  head.title = n.title;
+  m.appendChild(head);
+  const lab = document.createElement('div');
+  lab.className = 'menu-title';
+  lab.textContent = '卡片颜色';
+  m.appendChild(lab);
+  const row = document.createElement('div');
+  row.className = 'ctx-colors';
+  PALETTE.forEach(([k, label]) => {
+    const d = document.createElement('button');
+    d.className = 'ctx-dot';
+    d.dataset.key = k;
+    d.style.background = 'var(--c-' + k + ')';
+    d.title = label;
+    d.setAttribute('aria-label', '颜色 ' + label);
+    d.addEventListener('click', () => { n.color = k; renderList(); updateCtxDots(m, n); });
+    row.appendChild(d);
+  });
+  const clear = document.createElement('button');
+  clear.className = 'ctx-dot clear';
+  clear.dataset.key = 'clear';
+  clear.title = '默认（清除颜色）';
+  clear.setAttribute('aria-label', '清除颜色');
+  clear.addEventListener('click', () => { n.color = null; renderList(); updateCtxDots(m, n); });
+  row.appendChild(clear);
+  m.appendChild(row);
+  m.appendChild(dividerEl());
+  const jr = document.createElement('div');
+  jr.className = 'ctx-row';
+  jr.innerHTML = icon('jelly') + '<span class="m-label">果冻动画</span>';
+  const sw = document.createElement('button');
+  sw.className = 'switch' + (n.jelly !== false ? ' on' : '');
+  sw.setAttribute('role', 'switch');
+  sw.setAttribute('aria-checked', n.jelly !== false ? 'true' : 'false');
+  sw.setAttribute('aria-label', '果冻动画');
+  sw.addEventListener('click', () => {
+    n.jelly = n.jelly === false ? true : false;
+    sw.classList.toggle('on', n.jelly !== false);
+    sw.setAttribute('aria-checked', n.jelly !== false ? 'true' : 'false');
+  });
+  jr.appendChild(sw);
+  m.appendChild(jr);
+  m.appendChild(dividerEl());
+  if (n.trashed) {
+    m.appendChild(menuItem(icon('restore'), '恢复', () => { closeCtx(); restoreNote(n.id); }));
+    m.appendChild(menuItem(icon('trash-x'), '彻底删除', () => { closeCtx(); purgeNote(n.id); }, true));
+  } else {
+    const starItem = menuItem(icon(n.starred ? 'star-f' : 'star'), n.starred ? '取消收藏' : '收藏', () => { closeCtx(); toggleStar(n.id); });
+    if (n.starred) { const sic = starItem.querySelector('.m-ic svg'); if (sic) sic.style.color = 'var(--amber)'; }
+    m.appendChild(starItem);
+    m.appendChild(menuItem(icon('pin'), n.pinned ? '取消置顶' : '置顶', () => { closeCtx(); togglePin(n.id); }));
+    m.appendChild(menuItem(icon('trash'), '删除', () => { closeCtx(); deleteNote(n.id); }, true));
+  }
+  showCtx(m, x, y);
+}
+function openBlankCtx(x, y) {
+  closeCtx();
+  const m = document.createElement('div');
+  m.className = 'menu ctx-menu';
+  m.appendChild(menuItem(icon('file-md'), '新建 Markdown 笔记', () => { closeCtx(); createNote('md'); }));
+  m.appendChild(menuItem(icon('file-txt'), '新建文本笔记', () => { closeCtx(); createNote('txt'); }));
+  m.appendChild(dividerEl());
+  m.appendChild(menuItem(icon('refresh'), '刷新', () => { closeCtx(); renderList(); toast('列表已刷新', false); }));
+  showCtx(m, x, y);
+}
+/* 右键：仅笔记列表区弹自定义菜单，其余区域无反应 */
+document.addEventListener('contextmenu', (e) => {
+  const t = e.target;
+  const inUi = !!t.closest('#app') || !!t.closest('.menu');
+  if (!inUi) return;
+  e.preventDefault();
+  closeMenu();
+  closeCtx();
+  if (!t.closest('#listpane')) return;
+  const card = t.closest('#note-list .card');
+  if (card && card.dataset.note) {
+    const n = noteById(card.dataset.note);
+    if (n) openCardCtx(n, e.clientX, e.clientY);
+  } else {
+    openBlankCtx(e.clientX, e.clientY);
+  }
+});
+el('note-list').addEventListener('scroll', () => closeCtx());
+window.addEventListener('resize', () => closeCtx());
+/* 果冻点击动画：默认开启，单卡可关闭 */
+function jellyPop(card) {
+  card.classList.remove('jelly');
+  void card.offsetWidth;
+  card.classList.add('jelly');
+  clearTimeout(jellyPop._t);
+  jellyPop._t = setTimeout(() => card.classList.remove('jelly'), 480);
 }
 
 function vaultMenuItems() {
@@ -2530,7 +2743,12 @@ document.addEventListener('click', (e) => {
     },
 
     /* 列表 */
-    'card-select'() { openNote(el2.dataset.note, false); },
+    'card-select'() {
+      const id = el2.dataset.note;
+      const n = noteById(id);
+      if (n && n.jelly !== false) jellyPop(el2);
+      openNote(id, false);
+    },
     'star-toggle'() { toggleStar(el2.dataset.note); },
     'pin-toggle'() { togglePin(el2.dataset.note); },
     'note-delete'() { deleteNote(el2.dataset.note); },
@@ -2770,6 +2988,7 @@ document.addEventListener('keydown', (e) => {
     return;
   }
   if (e.key === 'Escape') {
+    if (ctxEl) { closeCtx(); return; }
     if (menuEl) { closeMenu(); return; }
     if (el('json-drawer').classList.contains('open')) { state.treeOpen = false; el('json-drawer').classList.remove('open'); el('json-tree-btn').classList.remove('active'); return; }
     if (document.getElementById('app').classList.contains('clean')) { document.getElementById('app').classList.remove('clean'); return; }
